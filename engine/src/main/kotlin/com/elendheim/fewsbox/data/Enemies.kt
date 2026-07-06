@@ -1,0 +1,72 @@
+package com.elendheim.fewsbox.data
+
+import com.elendheim.fewsbox.engine.ai.AiNudge
+import com.elendheim.fewsbox.engine.ai.AiProfile
+import com.elendheim.fewsbox.engine.ai.WeightedMove
+import com.elendheim.fewsbox.engine.model.ChargeState
+import com.elendheim.fewsbox.engine.model.CombatUnit
+import com.elendheim.fewsbox.engine.model.Team
+
+/**
+ * Enemy factories. Trash mobs are individually weaker than a player unit
+ * and come in numbers; elites are stronger and telegraph their big hit by
+ * charging over several turns.
+ */
+object Enemies {
+
+    // --- Trash (3 types) ---
+
+    fun grunt(id: String) = CombatUnit(
+        id = id, name = "Grunt", iconId = "ic_enemy_grunt",
+        maxHp = 20, hp = 20, team = Team.ENEMY, baseAttack = 5,
+        abilities = listOf(EnemyAbilities.BASIC_SLASH, EnemyAbilities.SMALL_GUARD),
+        aiProfile = AiProfile(
+            weightedMoves = listOf(
+                WeightedMove("basic_slash", 8),
+                WeightedMove("small_guard", 2)
+            ),
+            nudges = listOf(AiNudge.ShieldWhenThreatened("small_guard", 4))
+        )
+    )
+
+    fun stinger(id: String) = CombatUnit(
+        id = id, name = "Stinger", iconId = "ic_enemy_stinger",
+        maxHp = 14, hp = 14, team = Team.ENEMY, baseAttack = 6,
+        abilities = listOf(EnemyAbilities.VENOM_SPIT, EnemyAbilities.BASIC_SLASH),
+        aiProfile = AiProfile(
+            weightedMoves = listOf(
+                WeightedMove("venom_spit", 6),
+                WeightedMove("basic_slash", 4)
+            )
+        )
+    )
+
+    fun shaman(id: String) = CombatUnit(
+        id = id, name = "Shaman", iconId = "ic_enemy_shaman",
+        maxHp = 16, hp = 16, team = Team.ENEMY, baseAttack = 4,
+        abilities = listOf(EnemyAbilities.BASIC_SLASH, EnemyAbilities.SMALL_HEAL),
+        aiProfile = AiProfile(
+            weightedMoves = listOf(
+                WeightedMove("basic_slash", 6),
+                WeightedMove("small_heal", 4)
+            ),
+            nudges = listOf(AiNudge.HealWhenLow(0.5f, "small_heal", 8))
+        )
+    )
+
+    // --- Elites (2 types) ---
+
+    fun brute(id: String) = CombatUnit(
+        id = id, name = "Brute", iconId = "ic_enemy_brute",
+        maxHp = 90, hp = 90, team = Team.ENEMY, baseAttack = 12,
+        abilities = listOf(EnemyAbilities.CRUSHING_BLOW),
+        charge = ChargeState(chargingAbilityId = "crushing_blow", turnsRequired = 3)
+    )
+
+    fun hexer(id: String) = CombatUnit(
+        id = id, name = "Hexer", iconId = "ic_enemy_hexer",
+        maxHp = 70, hp = 70, team = Team.ENEMY, baseAttack = 10,
+        abilities = listOf(EnemyAbilities.DOOM_BOLT),
+        charge = ChargeState(chargingAbilityId = "doom_bolt", turnsRequired = 2)
+    )
+}
