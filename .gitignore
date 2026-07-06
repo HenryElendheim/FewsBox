@@ -1,0 +1,23 @@
+# Android / Gradle
+*.apk
+*.aab
+*.ap_
+*.dex
+build/
+.gradle/
+local.properties
+captures/
+output-metadata.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Kotlin
+*.class
+.kotlin/
+
+# Misc
+.DS_Store
+*.log
