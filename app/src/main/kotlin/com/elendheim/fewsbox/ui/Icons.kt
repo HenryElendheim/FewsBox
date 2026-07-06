@@ -26,6 +26,7 @@ object GameIcons {
         // Heroes
         "ic_hero_vanguard" to IconSpec("VA", ShieldBlue),
         "ic_hero_ranger" to IconSpec("RA", HpGreen),
+        "ic_hero_mystic" to IconSpec("MY", Violet),
 
         // Enemies
         "ic_enemy_grunt" to IconSpec("GR", DangerRed),
@@ -82,4 +83,16 @@ object GameIcons {
     )
 
     operator fun get(iconId: String): IconSpec = map[iconId] ?: IconSpec("?", Accent)
+
+    /**
+     * Heroes render as solid color blocks, not glyph chips — you learn your
+     * own team by color. Enemies keep the lettered chips.
+     */
+    private val heroColors = mapOf(
+        "ic_hero_vanguard" to ShieldBlue,
+        "ic_hero_ranger" to HpGreen,
+        "ic_hero_mystic" to Violet
+    )
+
+    fun heroColor(iconId: String): Color? = heroColors[iconId]
 }

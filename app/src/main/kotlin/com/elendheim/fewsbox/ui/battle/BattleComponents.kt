@@ -4,9 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,6 +129,7 @@ fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UnitCard(
     unit: CombatUnit,
@@ -135,7 +137,8 @@ fun UnitCard(
     isActiveActor: Boolean,
     flashCount: Int,
     floaties: List<Floaty>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     // Hit flash hook: today a red tint, later a hurt animation + particles.
     val flash by animateColorAsState(
@@ -159,7 +162,7 @@ fun UnitCard(
         modifier = Modifier
             .width(76.dp)
             .alpha(deadAlpha)
-            .clickable(enabled = unit.isAlive, onClick = onClick)
+            .combinedClickable(enabled = unit.isAlive, onClick = onClick, onLongClick = onLongClick)
             .semantics { contentDescription = unit.name }
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -170,13 +173,24 @@ fun UnitCard(
                     modifier = Modifier.size(64.dp)
                 )
             }
+            val heroColor = GameIcons.heroColor(unit.iconId)
             Box(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .border(2.dp, borderColor, RoundedCornerShape(14.dp))
             ) {
-                IconChip(unit.iconId, size = 52)
+                if (heroColor != null) {
+                    // Your own units are solid color blocks.
+                    Box(
+                        Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(heroColor)
+                    )
+                } else {
+                    IconChip(unit.iconId, size = 52)
+                }
                 Box(
                     Modifier
                         .size(52.dp)
@@ -227,13 +241,15 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AbilityButton(
     ability: Ability,
     selected: Boolean,
     enabled: Boolean,
     cooldownLeft: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val border = if (selected) Accent else Color.Transparent
     Column(
@@ -242,7 +258,12 @@ fun AbilityButton(
             .alpha(if (enabled) 1f else 0.35f)
             .clip(RoundedCornerShape(12.dp))
             .border(2.dp, border, RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled, onClick = onClick)
+            // Long-press info works even when the button is unaffordable.
+            .combinedClickable(
+                enabled = true,
+                onClick = { if (enabled) onClick() },
+                onLongClick = onLongClick
+            )
             .padding(6.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {

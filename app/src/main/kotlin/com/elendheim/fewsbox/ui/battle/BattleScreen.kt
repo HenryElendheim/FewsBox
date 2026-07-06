@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +36,9 @@ import com.elendheim.fewsbox.engine.ability.Targeting
 import com.elendheim.fewsbox.engine.event.CombatEvent
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.model.TurnPhase
+import com.elendheim.fewsbox.ui.GameText
+import com.elendheim.fewsbox.ui.InfoContent
+import com.elendheim.fewsbox.ui.InfoOverlay
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.DangerRed
 import com.elendheim.fewsbox.ui.theme.EnergyGold
@@ -57,6 +61,7 @@ fun BattleScreen(
 
     var selectedAbilityId by remember { mutableStateOf<String?>(null) }
     var activeActorId by remember { mutableStateOf<String?>(null) }
+    var info by remember { mutableStateOf<InfoContent?>(null) }
 
     // Event-driven feedback. Today: flashes and floating numbers. Later the
     // same collection point drives sprites, particles and sound.
@@ -110,7 +115,11 @@ fun BattleScreen(
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         Column(
-            Modifier.fillMaxSize().padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding()   // keep the battle clear of the status bar
+                .padding(horizontal = 16.dp)
+                .padding(top = 24.dp, bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -134,7 +143,8 @@ fun BattleScreen(
                         isActiveActor = false,
                         flashCount = flashes[enemy.id] ?: 0,
                         floaties = floaties[enemy.id] ?: emptyList(),
-                        onClick = { if (targetable) useAbilityOn(enemy.id) }
+                        onClick = { if (targetable) useAbilityOn(enemy.id) },
+                        onLongClick = { info = GameText.unitInfo(enemy) }
                     )
                 }
             }
@@ -152,6 +162,7 @@ fun BattleScreen(
                         isActiveActor = player.id == activeActor?.id,
                         flashCount = flashes[player.id] ?: 0,
                         floaties = floaties[player.id] ?: emptyList(),
+                        onLongClick = { info = GameText.unitInfo(player) },
                         onClick = {
                             when {
                                 allyTargetable -> useAbilityOn(player.id)
@@ -182,6 +193,7 @@ fun BattleScreen(
                             selected = ability.id == selectedAbilityId,
                             enabled = !inputLocked && affordable && ready,
                             cooldownLeft = activeActor.cooldownLeft(ability.id),
+                            onLongClick = { info = GameText.abilityInfo(ability, activeActor.baseAttack) },
                             onClick = {
                                 if (ability.targeting.needsChosenTarget()) {
                                     selectedAbilityId =
@@ -194,9 +206,9 @@ fun BattleScreen(
                             }
                         )
                     }
-                    // Hold: let this hero sit the round out (saves energy).
+                    // Recharge: this hero sits the round out and saves energy.
                     Text(
-                        text = "HOLD",
+                        text = "RECHARGE",
                         color = TextMuted,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -213,6 +225,8 @@ fun BattleScreen(
             EnergyPips(battle.resources.energy, battle.resources.maxEnergy)
             Spacer(Modifier.height(8.dp))
         }
+
+        InfoOverlay(content = info, onDismiss = { info = null })
 
         // Battle end overlay
         if (battle.phase == TurnPhase.BATTLE_OVER) {

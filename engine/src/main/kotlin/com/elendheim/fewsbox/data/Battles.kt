@@ -18,6 +18,10 @@ data class Loadout(
 
 object Party {
 
+    // Hard cap for now. The engine and UI both iterate the party list, so
+    // raising this to 4 later is a one-line change plus a fourth hero below.
+    const val MAX_SIZE = 3
+
     fun vanguard(weapon: Weapon = Weapons.CLEAVER, offhand: Offhand = Offhands.TOWER_SHIELD) = Loadout(
         unitId = "player_vanguard", unitName = "Vanguard", iconId = "ic_hero_vanguard",
         maxHp = 60, baseAttack = 8, weapon = weapon, offhand = offhand
@@ -28,7 +32,12 @@ object Party {
         maxHp = 45, baseAttack = 9, weapon = weapon, offhand = offhand
     )
 
-    fun defaultParty() = listOf(vanguard(), ranger())
+    fun mystic(weapon: Weapon = Weapons.EMBER_BLADE, offhand: Offhand = Offhands.DETONATOR) = Loadout(
+        unitId = "player_mystic", unitName = "Mystic", iconId = "ic_hero_mystic",
+        maxHp = 40, baseAttack = 10, weapon = weapon, offhand = offhand
+    )
+
+    fun defaultParty() = listOf(vanguard(), ranger(), mystic()).take(MAX_SIZE)
 }
 
 fun Loadout.toUnit(): CombatUnit = CombatUnit(
@@ -72,9 +81,10 @@ object Battles {
                 Enemies.shaman("enemy_3"), Enemies.stinger("enemy_4")
             )
         }
+        // Three heroes at ~2 energy per action need a bigger pool than two did.
         return BattleState(
             units = players + enemies,
-            resources = ResourceState(energy = 5, maxEnergy = 5, regenPerRound = 3)
+            resources = ResourceState(energy = 6, maxEnergy = 6, regenPerRound = 4)
         )
     }
 }
