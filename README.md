@@ -57,12 +57,12 @@ The one rule that never breaks: game logic never knows what anything looks like.
 
 ## Roadmap
 
-- [ ] Engine skeleton - damage, shields, core data models
-- [ ] Full ability resolution - multi-hit, execute, lifesteal, statuses, combos
-- [ ] Status system and the full turn loop
-- [ ] Enemy AI with weighted moves and charge telegraphs
-- [ ] Playable Compose battle screen
-- [ ] Loadout screen - the mixing goes player-facing
+- [x] Engine skeleton - damage, shields, core data models
+- [x] Full ability resolution - multi-hit, execute, lifesteal, statuses, combos
+- [x] Status system and the full turn loop
+- [x] Enemy AI with weighted moves and charge telegraphs
+- [x] Playable Compose battle screen
+- [x] Loadout screen - the mixing goes player-facing
 - [ ] Juice pass - hit flashes, floating numbers, screen shake
 - [ ] Persistence and progression
 - [ ] Art and animation, one piece at a time
