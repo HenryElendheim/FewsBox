@@ -58,6 +58,7 @@ import com.elendheim.fewsbox.ui.theme.TextMuted
  * each hero's kit from their own restricted pools. Long-press anything to
  * read what it does.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LoadoutScreen(
     roster: List<Loadout>,
