@@ -42,18 +42,27 @@ private enum class Screen { LOADOUT, BATTLE }
 fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
     var screen by remember { mutableStateOf(Screen.LOADOUT) }
     var battleIndex by remember { mutableIntStateOf(0) }
-    var party by remember { mutableStateOf(Party.defaultParty()) }
+    var roster by remember { mutableStateOf(Party.rosterDefaults()) }
+    var selectedIds by remember { mutableStateOf(Party.DEFAULT_PARTY_IDS) }
 
     when (screen) {
         Screen.LOADOUT -> LoadoutScreen(
-            party = party,
+            roster = roster,
+            selectedIds = selectedIds,
             battleIndex = battleIndex,
             battleCount = Battles.count,
+            onToggleHero = { heroId ->
+                selectedIds = when {
+                    heroId in selectedIds && selectedIds.size > 1 -> selectedIds - heroId
+                    heroId !in selectedIds && selectedIds.size < Party.MAX_SIZE -> selectedIds + heroId
+                    else -> selectedIds
+                }
+            },
             onLoadoutChange = { changed: Loadout ->
-                party = party.map { if (it.unitId == changed.unitId) changed else it }
+                roster = roster.map { if (it.hero.id == changed.hero.id) changed else it }
             },
             onFight = {
-                vm.startBattle(battleIndex, party)
+                vm.startBattle(battleIndex, roster.filter { it.hero.id in selectedIds })
                 screen = Screen.BATTLE
             }
         )

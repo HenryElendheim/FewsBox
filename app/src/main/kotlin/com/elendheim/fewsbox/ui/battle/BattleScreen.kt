@@ -206,9 +206,9 @@ fun BattleScreen(
                             }
                         )
                     }
-                    // Recharge: this hero sits the round out and saves energy.
+                    // Hold: this hero sits the round out and saves energy.
                     Text(
-                        text = "RECHARGE",
+                        text = "HOLD",
                         color = TextMuted,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,

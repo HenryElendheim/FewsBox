@@ -87,8 +87,8 @@ object GameText {
     )
 
     private val offhandBlurbs = mapOf(
-        "off_tower_shield" to "A big shield on yourself.",
-        "off_spiked_shield" to "A lighter shield. Thorns coming later.",
+        "off_tower_shield" to "A big shield, given to any ally.",
+        "off_spiked_shield" to "A lighter shield for any ally. Thorns coming later.",
         "off_medkit" to "Heal any ally.",
         "off_banner" to "Pull all enemy attacks onto yourself, plus a small shield.",
         "off_detonator" to "Blow up every Burn stack on the target for burst damage.",

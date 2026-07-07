@@ -23,17 +23,12 @@ private val TealDim = Color(0xFF6FA8A3)
 object GameIcons {
 
     private val map = mapOf(
-        // Heroes
-        "ic_hero_vanguard" to IconSpec("VA", ShieldBlue),
-        "ic_hero_ranger" to IconSpec("RA", HpGreen),
-        "ic_hero_mystic" to IconSpec("MY", Violet),
-
-        // Enemies
-        "ic_enemy_grunt" to IconSpec("GR", DangerRed),
-        "ic_enemy_stinger" to IconSpec("ST", Amber),
-        "ic_enemy_shaman" to IconSpec("SH", Violet),
-        "ic_enemy_brute" to IconSpec("BR", DangerRed),
-        "ic_enemy_hexer" to IconSpec("HX", Violet),
+        // Enemies are grayscale, always. Color belongs to the heroes.
+        "ic_enemy_grunt" to IconSpec("GR", Color(0xFFB0B0B0)),
+        "ic_enemy_stinger" to IconSpec("ST", Color(0xFFD6D6D6)),
+        "ic_enemy_shaman" to IconSpec("SH", Color(0xFF8A8A8A)),
+        "ic_enemy_brute" to IconSpec("BR", Color(0xFFEDEDED)),
+        "ic_enemy_hexer" to IconSpec("HX", Color(0xFF6E6E6E)),
 
         // Weapon abilities
         "ic_atk_cleave" to IconSpec("CL", Accent),
@@ -85,13 +80,16 @@ object GameIcons {
     operator fun get(iconId: String): IconSpec = map[iconId] ?: IconSpec("?", Accent)
 
     /**
-     * Heroes render as solid color blocks, not glyph chips — you learn your
-     * own team by color. Enemies keep the lettered chips.
+     * Heroes render as solid color blocks, not glyph chips — the color IS
+     * the character. Enemies keep lettered chips, strictly grayscale.
      */
     private val heroColors = mapOf(
-        "ic_hero_vanguard" to ShieldBlue,
-        "ic_hero_ranger" to HpGreen,
-        "ic_hero_mystic" to Violet
+        "ic_hero_red" to Color(0xFFE5484D),
+        "ic_hero_orange" to Color(0xFFE8823D),
+        "ic_hero_yellow" to Color(0xFFFFD166),
+        "ic_hero_green" to Color(0xFF6FCF97),
+        "ic_hero_blue" to Color(0xFF4AA3FF),
+        "ic_hero_violet" to Color(0xFFB68CFF)
     )
 
     fun heroColor(iconId: String): Color? = heroColors[iconId]

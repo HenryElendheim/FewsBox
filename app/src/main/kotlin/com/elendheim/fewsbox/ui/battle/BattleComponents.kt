@@ -226,15 +226,18 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
                 animationSpec = tween(durationMillis = 800),
                 label = "floaty${floaty.key}"
             )
+            // Big and unmissable: reading the number IS the combat feedback.
             Text(
                 text = floaty.text,
                 color = floaty.color,
-                fontSize = 16.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier
                     .graphicsLayer {
-                        translationY = -30f * progress
-                        alpha = 1f - progress * 0.9f
+                        translationY = -44f * progress
+                        alpha = 1f - progress * 0.8f
+                        scaleX = 1f + 0.25f * (1f - progress)
+                        scaleY = 1f + 0.25f * (1f - progress)
                     }
             )
         }

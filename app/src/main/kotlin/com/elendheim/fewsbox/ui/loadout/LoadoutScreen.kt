@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.elendheim.fewsbox.data.Loadout
 import com.elendheim.fewsbox.data.Offhands
+import com.elendheim.fewsbox.data.Party
 import com.elendheim.fewsbox.data.Weapons
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.GameText
@@ -52,14 +54,17 @@ import com.elendheim.fewsbox.ui.theme.TextBright
 import com.elendheim.fewsbox.ui.theme.TextMuted
 
 /**
- * Pick a weapon and an offhand per hero, then fight. Long-press anything to
- * read what it actually does, with damage numbers from that hero's stats.
+ * Pick who fights (up to Party.MAX_SIZE from the rainbow roster), then pick
+ * each hero's kit from their own restricted pools. Long-press anything to
+ * read what it does.
  */
 @Composable
 fun LoadoutScreen(
-    party: List<Loadout>,
+    roster: List<Loadout>,
+    selectedIds: Set<String>,
     battleIndex: Int,
     battleCount: Int,
+    onToggleHero: (String) -> Unit,
     onLoadoutChange: (Loadout) -> Unit,
     onFight: () -> Unit
 ) {
@@ -96,9 +101,42 @@ fun LoadoutScreen(
                 }
             }
 
+            Spacer(Modifier.height(18.dp))
+
+            // The roster: tap a color to put it in (or pull it from) the party.
+            Text(
+                "PARTY ${selectedIds.size}/${Party.MAX_SIZE}",
+                color = TextMuted,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.sp
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (member in roster) {
+                    val inParty = member.hero.id in selectedIds
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                3.dp,
+                                if (inParty) TextBright else Color.Transparent,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .background(GameIcons.heroColor(member.hero.iconId) ?: Accent)
+                            .alpha(if (inParty) 1f else 0.45f)
+                            .combinedClickable(
+                                onClick = { onToggleHero(member.hero.id) },
+                                onLongClick = { info = heroInfo(member) }
+                            )
+                    )
+                }
+            }
+
             Spacer(Modifier.height(20.dp))
 
-            for (member in party) {
+            for (member in roster.filter { it.hero.id in selectedIds }) {
                 HeroLoadoutCard(
                     member = member,
                     onLoadoutChange = onLoadoutChange,
@@ -110,6 +148,7 @@ fun LoadoutScreen(
             Spacer(Modifier.height(6.dp))
             Button(
                 onClick = onFight,
+                enabled = selectedIds.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Ink),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
@@ -127,18 +166,11 @@ fun LoadoutScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun HeroLoadoutCard(
-    member: Loadout,
-    onLoadoutChange: (Loadout) -> Unit,
-    onInfo: (InfoContent) -> Unit
-) {
-    val attack = member.baseAttack + member.weapon.attackBonus
-
-    fun heroInfo() = InfoContent(
-        title = member.unitName,
-        subtitle = "HP ${member.maxHp} · ATK $attack with ${GameText.name(member.weapon.id)}",
+private fun heroInfo(member: Loadout): InfoContent {
+    val attack = member.hero.baseAttack + member.weapon.attackBonus
+    return InfoContent(
+        title = member.hero.name,
+        subtitle = "HP ${member.hero.maxHp} · ATK $attack with ${GameText.name(member.weapon.id)}",
         lines = buildList {
             add(GameText.name(member.weapon.id).uppercase())
             add("  " + GameText.weaponBlurb(member.weapon.id))
@@ -148,6 +180,16 @@ private fun HeroLoadoutCard(
             addAll(GameText.describeAbility(member.offhand.grantedAbility, attack).map { "  $it" })
         }
     )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HeroLoadoutCard(
+    member: Loadout,
+    onLoadoutChange: (Loadout) -> Unit,
+    onInfo: (InfoContent) -> Unit
+) {
+    val attack = member.hero.baseAttack + member.weapon.attackBonus
 
     Column(
         Modifier
@@ -158,20 +200,22 @@ private fun HeroLoadoutCard(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.combinedClickable(onClick = {}, onLongClick = { onInfo(heroInfo()) })
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { onInfo(heroInfo(member)) }
+            )
         ) {
-            // Heroes are solid color blocks, matching how they look in battle.
             Box(
                 Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(GameIcons.heroColor(member.iconId) ?: Accent)
+                    .background(GameIcons.heroColor(member.hero.iconId) ?: Accent)
             )
             Spacer(Modifier.size(10.dp))
             Column {
-                Text(member.unitName, color = TextBright, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(member.hero.name, color = TextBright, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StatPip("HP ${member.maxHp}")
+                    StatPip("HP ${member.hero.maxHp}")
                     StatPip("ATK $attack")
                 }
             }
@@ -179,7 +223,9 @@ private fun HeroLoadoutCard(
 
         Spacer(Modifier.height(12.dp))
         PickerRow(
-            options = Weapons.ALL.map { it.id to it.iconId },
+            options = member.hero.weaponIds.map { id ->
+                id to Weapons.REGISTRY.getValue(id).iconId
+            },
             selectedId = member.weapon.id,
             onPick = { id -> onLoadoutChange(member.copy(weapon = Weapons.REGISTRY.getValue(id))) },
             onHold = { id ->
@@ -189,14 +235,19 @@ private fun HeroLoadoutCard(
                         title = GameText.name(id),
                         subtitle = "Weapon" + if (weapon.attackBonus > 0) " · +${weapon.attackBonus} ATK" else "",
                         lines = listOf(GameText.weaponBlurb(id)) +
-                            GameText.describeAbility(weapon.grantedAbility, member.baseAttack + weapon.attackBonus)
+                            GameText.describeAbility(
+                                weapon.grantedAbility,
+                                member.hero.baseAttack + weapon.attackBonus
+                            )
                     )
                 )
             }
         )
         Spacer(Modifier.height(8.dp))
         PickerRow(
-            options = Offhands.ALL.map { it.id to it.iconId },
+            options = member.hero.offhandIds.map { id ->
+                id to Offhands.REGISTRY.getValue(id).iconId
+            },
             selectedId = member.offhand.id,
             onPick = { id -> onLoadoutChange(member.copy(offhand = Offhands.REGISTRY.getValue(id))) },
             onHold = { id ->

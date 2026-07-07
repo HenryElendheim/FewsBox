@@ -193,14 +193,14 @@ object Weapons {
 
 object Offhands {
 
-    // 1. TOWER SHIELD — large flat shield. Pure mitigation.
+    // 1. TOWER SHIELD — large flat shield, handed to any ally (like Medkit).
     val TOWER_SHIELD = Offhand(
         id = "off_tower_shield",
         iconId = "ic_off_tower",
         grantedAbility = Ability(
             id = "def_tower",
             iconId = "ic_def_tower",
-            targeting = Targeting.SELF,
+            targeting = Targeting.SINGLE_ALLY,
             cost = 2,
             effects = listOf(
                 Effect.GainShield(amount = 12)
@@ -208,14 +208,14 @@ object Offhands {
         )
     )
 
-    // 2. SPIKED SHIELD — smaller shield + Weaken the attacker's line.
+    // 2. SPIKED SHIELD — lighter shield, also for any ally. Thorns later.
     val SPIKED_SHIELD = Offhand(
         id = "off_spiked_shield",
         iconId = "ic_off_spiked",
         grantedAbility = Ability(
             id = "def_spiked",
             iconId = "ic_def_spiked",
-            targeting = Targeting.SELF,
+            targeting = Targeting.SINGLE_ALLY,
             cost = 2,
             effects = listOf(
                 Effect.GainShield(amount = 8)
