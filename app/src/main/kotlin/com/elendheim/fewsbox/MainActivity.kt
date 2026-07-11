@@ -72,7 +72,8 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                 roster = roster.map { if (it.hero.id == changed.hero.id) changed else it }
             },
             onFight = {
-                vm.startBattle(battleIndex, roster.filter { it.hero.id in selectedIds })
+                val party = roster.filter { member -> member.hero.id in selectedIds }
+                vm.startBattle(battleIndex, party)
                 screen = Screen.BATTLE
             }
         )
