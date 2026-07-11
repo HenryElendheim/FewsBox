@@ -11,7 +11,10 @@ data class BattleState(
     val resources: ResourceState,
     var round: Int = 1,
     var phase: TurnPhase = TurnPhase.PLAYER_INPUT,
-    val actedThisRound: MutableSet<String> = mutableSetOf()
+    val actedThisRound: MutableSet<String> = mutableSetOf(),
+    // Enemies waiting to act this enemy phase; lets the UI step through
+    // one turn at a time and pace the round.
+    val enemyQueue: MutableList<String> = mutableListOf()
 ) {
     val players get() = units.filter { it.team == Team.PLAYER && it.isAlive }
     val enemies get() = units.filter { it.team == Team.ENEMY && it.isAlive }

@@ -62,50 +62,79 @@ class BattleEngine(
     }
 
     /**
-     * Runs the enemy phase and closes out the round. The UI calls this once
-     * every living player unit has acted (or the player passes).
+     * Runs the whole enemy phase and closes out the round in one call. The
+     * stepwise trio below does the same thing but lets the UI put a beat
+     * between enemy turns so rounds stay readable.
      */
     fun finishRound(state: BattleState) {
-        if (state.phase != TurnPhase.PLAYER_INPUT) return
+        if (!beginEnemyPhase(state)) return
+        @Suppress("ControlFlowWithEmptyBody")
+        while (nextEnemyTurn(state)) { }
+        completeRound(state)
+    }
+
+    /** Queue up the enemy phase. Returns false if it isn't time for one. */
+    fun beginEnemyPhase(state: BattleState): Boolean {
+        if (state.phase != TurnPhase.PLAYER_INPUT) return false
         state.phase = TurnPhase.ENEMY_TURN
+        state.enemyQueue.clear()
+        state.enemyQueue.addAll(state.units.filter { it.team == Team.ENEMY }.map { it.id })
+        return true
+    }
 
-        for (enemy in state.units.filter { it.team == Team.ENEMY }) {
+    /**
+     * Executes exactly one enemy's turn. Returns true if a turn ran (call
+     * again after rendering); false when the phase is over or the battle is.
+     */
+    fun nextEnemyTurn(state: BattleState): Boolean {
+        if (state.phase != TurnPhase.ENEMY_TURN) return false
+        while (state.enemyQueue.isNotEmpty()) {
+            val enemy = state.unitOrNull(state.enemyQueue.removeAt(0)) ?: continue
             if (!enemy.isAlive) continue
-
-            tickStartOfTurnStatuses(state, enemy)
-            if (checkBattleEnd(state)) return
-            if (!enemy.isAlive) continue
-
-            if (consumeStunIfPresent(enemy)) continue
-
-            val charge = enemy.charge
-            if (charge != null) {
-                if (charge.isReady) {
-                    val ability = enemy.abilities.firstOrNull { it.id == charge.chargingAbilityId }
-                    if (ability != null) {
-                        emit(CombatEvent.ChargeFired(enemy.id, ability.id))
-                        resolver.resolve(state, enemy, ability, emptyList())
-                    }
-                    charge.turnsElapsed = 0
-                    emit(CombatEvent.ChargeAdvanced(enemy.id, charge.progress))
-                } else {
-                    // Charging enemies only charge. Readable on purpose.
-                    charge.turnsElapsed++
-                    emit(CombatEvent.ChargeAdvanced(enemy.id, charge.progress))
-                }
-            } else {
-                val action = AiEngine.chooseAction(state, enemy, rng)
-                if (action != null) {
-                    val (ability, targets) = action
-                    if (ability.cooldown > 0) enemy.cooldowns[ability.id] = ability.cooldown
-                    resolver.resolve(state, enemy, ability, targets)
-                }
-            }
-            if (checkBattleEnd(state)) return
+            takeEnemyTurn(state, enemy)
+            return true
         }
+        return false
+    }
 
+    /** End-of-round bookkeeping once the queue is drained. */
+    fun completeRound(state: BattleState) {
+        if (state.phase != TurnPhase.ENEMY_TURN) return
         endOfRound(state)
         startNextRound(state)
+    }
+
+    private fun takeEnemyTurn(state: BattleState, enemy: CombatUnit) {
+        tickStartOfTurnStatuses(state, enemy)
+        if (checkBattleEnd(state)) return
+        if (!enemy.isAlive) return
+
+        if (consumeStunIfPresent(enemy)) return
+
+        val charge = enemy.charge
+        if (charge != null) {
+            if (charge.isReady) {
+                val ability = enemy.abilities.firstOrNull { it.id == charge.chargingAbilityId }
+                if (ability != null) {
+                    emit(CombatEvent.ChargeFired(enemy.id, ability.id))
+                    resolver.resolve(state, enemy, ability, emptyList())
+                }
+                charge.turnsElapsed = 0
+                emit(CombatEvent.ChargeAdvanced(enemy.id, charge.progress))
+            } else {
+                // Charging enemies only charge. Readable on purpose.
+                charge.turnsElapsed++
+                emit(CombatEvent.ChargeAdvanced(enemy.id, charge.progress))
+            }
+        } else {
+            val action = AiEngine.chooseAction(state, enemy, rng)
+            if (action != null) {
+                val (ability, targets) = action
+                if (ability.cooldown > 0) enemy.cooldowns[ability.id] = ability.cooldown
+                resolver.resolve(state, enemy, ability, targets)
+            }
+        }
+        checkBattleEnd(state)
     }
 
     // ------------------------------------------------------------------

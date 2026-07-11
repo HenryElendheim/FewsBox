@@ -54,12 +54,8 @@ Not written yet. Known fixed points:
   deferred until the base loop is proven fun
 - **Ultimates** - one big cooldown-gated ability per hero. The engine
   already supports cooldowns, needs design per color
-- **Persistence** - save run progress and loadouts (kotlinx.serialization,
-  app-private storage)
-- **Enemy turn pacing** - play out enemy actions one at a time instead of
-  all at once, so rounds are readable
-- **Juice** - screen shake on big hits, charge-ring pulse when an elite is
-  ready to fire, ability button press feedback
+- **Ability button press feedback** - small scale/pop on tap (shake, ring
+  pulse and turn pacing shipped already)
 - **More battles** - current five ramp up to the Brute; the campaign should
   continue into boss fights (see grayscale bosses above)
 - **Sound** - hooks exist via the combat event stream, nothing wired yet

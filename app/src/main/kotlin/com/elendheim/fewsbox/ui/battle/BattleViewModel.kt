@@ -79,10 +79,18 @@ class BattleViewModel : ViewModel() {
 
         _snapshot.update { it.copy(enemyTurnRunning = true) }
         viewModelScope.launch {
-            // A beat between the player's last tap and the enemy response so
-            // the outcome of the player's action is readable.
+            // A beat after the player's last tap, then one enemy at a time
+            // with a pause between turns, so the round reads as a sequence
+            // instead of a burst of numbers.
             delay(600)
-            e.finishRound(s)
+            if (e.beginEnemyPhase(s)) {
+                push()
+                while (e.nextEnemyTurn(s)) {
+                    push()
+                    delay(700)
+                }
+                e.completeRound(s)
+            }
             _snapshot.update { it.copy(enemyTurnRunning = false) }
             push()
         }

@@ -1,7 +1,11 @@
 package com.elendheim.fewsbox.ui.battle
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -105,7 +109,8 @@ fun StatusRow(statuses: List<ActiveStatus>, modifier: Modifier = Modifier) {
     }
 }
 
-/** The elite telegraph: a ring that fills as the big attack winds up. */
+/** The elite telegraph: a ring that fills as the big attack winds up and
+ *  pulses once it's ready — the next turn is going to hurt. */
 @Composable
 fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier) {
     val animated by animateFloatAsState(
@@ -113,7 +118,17 @@ fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier) {
         animationSpec = tween(durationMillis = 500),
         label = "charge"
     )
-    val ringColor = if (ready) Accent else Accent.copy(alpha = 0.75f)
+    val ringColor = if (ready) {
+        val pulse by rememberInfiniteTransition(label = "chargePulse").animateFloat(
+            initialValue = 0.45f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(durationMillis = 450), RepeatMode.Reverse),
+            label = "chargePulseAlpha"
+        )
+        Accent.copy(alpha = pulse)
+    } else {
+        Accent.copy(alpha = 0.75f)
+    }
     Canvas(modifier = modifier) {
         val stroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
         drawArc(

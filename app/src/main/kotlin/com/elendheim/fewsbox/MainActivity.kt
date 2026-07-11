@@ -7,12 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.elendheim.fewsbox.data.Battles
 import com.elendheim.fewsbox.data.Loadout
@@ -40,10 +42,18 @@ private enum class Screen { LOADOUT, BATTLE }
 
 @Composable
 fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
+    val context = LocalContext.current
+    val saved = remember { SaveStore.load(context) }
+
     var screen by remember { mutableStateOf(Screen.LOADOUT) }
-    var battleIndex by remember { mutableIntStateOf(0) }
-    var roster by remember { mutableStateOf(Party.rosterDefaults()) }
-    var selectedIds by remember { mutableStateOf(Party.DEFAULT_PARTY_IDS) }
+    var battleIndex by remember { mutableIntStateOf(saved.battleIndex) }
+    var roster by remember { mutableStateOf(saved.roster) }
+    var selectedIds by remember { mutableStateOf(saved.selectedIds) }
+
+    // Write-through save: any change to progress, party or gear persists.
+    LaunchedEffect(battleIndex, roster, selectedIds) {
+        SaveStore.save(context, battleIndex, selectedIds, roster)
+    }
 
     when (screen) {
         Screen.LOADOUT -> LoadoutScreen(

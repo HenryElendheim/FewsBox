@@ -1,5 +1,7 @@
 package com.elendheim.fewsbox.ui.battle
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,10 +66,11 @@ fun BattleScreen(
     var activeActorId by remember { mutableStateOf<String?>(null) }
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
-    // Event-driven feedback. Today: flashes and floating numbers. Later the
-    // same collection point drives sprites, particles and sound.
+    // Event-driven feedback. Today: flashes, floating numbers, screen shake.
+    // Later the same collection point drives sprites, particles and sound.
     val flashes = remember { mutableStateMapOf<String, Int>() }
     val floaties = remember { mutableStateMapOf<String, List<Floaty>>() }
+    val shake = remember { Animatable(0f) }
 
     LaunchedEffect(vm) {
         var floatyKey = 0L
@@ -78,11 +82,28 @@ fun BattleScreen(
                 floaties[unitId] = (floaties[unitId] ?: emptyList()).filterNot { it.key == key }
             }
         }
+        fun shakeScreen() {
+            launch {
+                shake.snapTo(0f)
+                shake.animateTo(
+                    targetValue = 0f,
+                    animationSpec = keyframes {
+                        durationMillis = 260
+                        14f at 30
+                        -10f at 90
+                        6f at 150
+                        -3f at 210
+                    }
+                )
+            }
+        }
         vm.events.collect { event ->
             when (event) {
                 is CombatEvent.DamageDealt -> {
                     flashes[event.targetId] = (flashes[event.targetId] ?: 0) + 1
                     addFloaty(event.targetId, "-${event.amount}", if (event.isCrit) EnergyGold else Accent)
+                    // Big hits and crits rattle the whole screen.
+                    if (event.isCrit || event.amount >= 12) shakeScreen()
                 }
                 is CombatEvent.StatusTicked -> {
                     flashes[event.targetId] = (flashes[event.targetId] ?: 0) + 1
@@ -117,6 +138,7 @@ fun BattleScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .graphicsLayer { translationX = shake.value }
                 .systemBarsPadding()   // keep the battle clear of the status bar
                 .padding(horizontal = 16.dp)
                 .padding(top = 24.dp, bottom = 8.dp),
