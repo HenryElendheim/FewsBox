@@ -75,7 +75,17 @@ object Statuses {
         timing = StatusTiming.PASSIVE_MODIFIER
     )
 
-    val ALL = listOf(BURN, POISON, STUN, WEAKEN, VULNERABLE, TAUNT)
+    // Strikes back at attackers: 3 flat damage per stack per hit taken.
+    val THORNS = StatusDef(
+        id = "thorns",
+        iconId = "ic_status_thorns",
+        kind = StatusKind.BUFF,
+        timing = StatusTiming.PASSIVE_MODIFIER,
+        magnitude = 3,
+        passive = PassiveEffect.THORNS
+    )
+
+    val ALL = listOf(BURN, POISON, STUN, WEAKEN, VULNERABLE, TAUNT, THORNS)
     val REGISTRY: Map<String, StatusDef> = ALL.associateBy { it.id }
 }
 
@@ -208,7 +218,7 @@ object Offhands {
         )
     )
 
-    // 2. SPIKED SHIELD — lighter shield, also for any ally. Thorns later.
+    // 2. SPIKED SHIELD — lighter shield for any ally, and it bites back.
     val SPIKED_SHIELD = Offhand(
         id = "off_spiked_shield",
         iconId = "ic_off_spiked",
@@ -218,7 +228,8 @@ object Offhands {
             targeting = Targeting.SINGLE_ALLY,
             cost = 2,
             effects = listOf(
-                Effect.GainShield(amount = 8)
+                Effect.GainShield(amount = 8),
+                Effect.ApplyStatus(statusId = "thorns", stacks = 1, duration = 2)
             )
         )
     )
@@ -290,6 +301,90 @@ object Offhands {
 
     val ALL = listOf(TOWER_SHIELD, SPIKED_SHIELD, MEDKIT, BANNER, DETONATOR, CLEANSER)
     val REGISTRY: Map<String, Offhand> = ALL.associateBy { it.id }
+}
+
+// ----------------------------------------------------------------------------
+//  ULTIMATES (1 per hero) — big cooldown-gated signature moves
+// ----------------------------------------------------------------------------
+
+object Ultimates {
+
+    // RED — one enormous hit. Simple, honest, terrifying.
+    val BERSERK = Ability(
+        id = "ult_red",
+        iconId = "ic_ult_red",
+        targeting = Targeting.SINGLE_ENEMY,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 2.4f, hits = 1, canCrit = true)
+        )
+    )
+
+    // ORANGE — set the whole enemy line burning.
+    val INFERNO = Ability(
+        id = "ult_orange",
+        iconId = "ic_ult_orange",
+        targeting = Targeting.ALL_ENEMIES,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 0.5f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)
+        )
+    )
+
+    // YELLOW — heal everyone.
+    val SUNBURST = Ability(
+        id = "ult_yellow",
+        iconId = "ic_ult_yellow",
+        targeting = Targeting.ALL_ALLIES,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.Heal(amount = 10)
+        )
+    )
+
+    // GREEN — five blades everywhere.
+    val RAZOR_STORM = Ability(
+        id = "ult_green",
+        iconId = "ic_ult_green",
+        targeting = Targeting.RANDOM_ENEMIES_MULTI,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 0.6f, hits = 5, canCrit = true)
+        )
+    )
+
+    // BLUE — shield the whole party.
+    val PHALANX = Ability(
+        id = "ult_blue",
+        iconId = "ic_ult_blue",
+        targeting = Targeting.ALL_ALLIES,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.GainShield(amount = 8)
+        )
+    )
+
+    // VIOLET — a hit that stuns. The reliable Lockdown button, gated hard.
+    val TERROR = Ability(
+        id = "ult_violet",
+        iconId = "ic_ult_violet",
+        targeting = Targeting.SINGLE_ENEMY,
+        cost = 3,
+        cooldown = 4,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 0.8f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "stun", stacks = 1, duration = 1)
+        )
+    )
+
+    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR)
+    val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }
 
 // ----------------------------------------------------------------------------

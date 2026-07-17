@@ -209,6 +209,18 @@ class Resolver(
         ctx.damageDealt += amount
         emit(CombatEvent.DamageDealt(target.id, amount, isCrit))
         if (!target.isAlive) emit(CombatEvent.UnitDied(target.id))
+
+        // Thorns: the target strikes back a flat amount per hit taken. The
+        // reflection never re-reflects and doesn't feed lifesteal.
+        val reflect = target.statuses.sumOf { status ->
+            val def = statusRegistry[status.defId]
+            if (def?.passive == PassiveEffect.THORNS) def.magnitude * status.stacks else 0
+        }
+        if (reflect > 0 && actor.isAlive) {
+            applyDamage(actor, reflect)
+            emit(CombatEvent.DamageDealt(actor.id, reflect, false))
+            if (!actor.isAlive) emit(CombatEvent.UnitDied(actor.id))
+        }
     }
 
     private fun passiveFactor(unit: CombatUnit, passive: PassiveEffect, reduces: Boolean): Float {

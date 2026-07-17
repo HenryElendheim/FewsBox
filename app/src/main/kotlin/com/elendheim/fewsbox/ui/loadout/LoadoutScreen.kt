@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.elendheim.fewsbox.data.Loadout
 import com.elendheim.fewsbox.data.Offhands
 import com.elendheim.fewsbox.data.Party
+import com.elendheim.fewsbox.data.Ultimates
 import com.elendheim.fewsbox.data.Weapons
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.GameText
@@ -169,6 +170,7 @@ fun LoadoutScreen(
 
 private fun heroInfo(member: Loadout): InfoContent {
     val attack = member.hero.baseAttack + member.weapon.attackBonus
+    val ultimate = Ultimates.REGISTRY.getValue(member.hero.ultimateId)
     return InfoContent(
         title = member.hero.name,
         subtitle = "HP ${member.hero.maxHp} · ATK $attack with ${GameText.name(member.weapon.id)}",
@@ -179,6 +181,8 @@ private fun heroInfo(member: Loadout): InfoContent {
             add(GameText.name(member.offhand.id).uppercase())
             add("  " + GameText.offhandBlurb(member.offhand.id))
             addAll(GameText.describeAbility(member.offhand.grantedAbility, attack).map { "  $it" })
+            add("ULTIMATE: " + GameText.name(ultimate.id).uppercase())
+            addAll(GameText.describeAbility(ultimate, attack).map { "  $it" })
         }
     )
 }

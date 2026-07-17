@@ -19,7 +19,8 @@ data class HeroDef(
     val weaponIds: List<String>,
     val offhandIds: List<String>,
     val defaultWeaponId: String,
-    val defaultOffhandId: String
+    val defaultOffhandId: String,
+    val ultimateId: String
 )
 
 /** A hero plus the equipment currently chosen for it. */
@@ -45,7 +46,8 @@ object Party {
         maxHp = 55, baseAttack = 11,
         weaponIds = allWeapons - "wpn_fan_blades",
         offhandIds = allOffhands - "off_medkit",
-        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_spiked_shield"
+        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_spiked_shield",
+        ultimateId = "ult_red"
     )
 
     val ORANGE = HeroDef(
@@ -53,7 +55,8 @@ object Party {
         maxHp = 42, baseAttack = 10,
         weaponIds = allWeapons - "wpn_leech",
         offhandIds = allOffhands - "off_tower_shield",
-        defaultWeaponId = "wpn_ember_blade", defaultOffhandId = "off_detonator"
+        defaultWeaponId = "wpn_ember_blade", defaultOffhandId = "off_detonator",
+        ultimateId = "ult_orange"
     )
 
     val YELLOW = HeroDef(
@@ -61,7 +64,8 @@ object Party {
         maxHp = 48, baseAttack = 8,
         weaponIds = allWeapons - "wpn_reaper",
         offhandIds = allOffhands - "off_detonator",
-        defaultWeaponId = "wpn_leech", defaultOffhandId = "off_medkit"
+        defaultWeaponId = "wpn_leech", defaultOffhandId = "off_medkit",
+        ultimateId = "ult_yellow"
     )
 
     val GREEN = HeroDef(
@@ -69,7 +73,8 @@ object Party {
         maxHp = 45, baseAttack = 9,
         weaponIds = allWeapons - "wpn_cleaver",
         offhandIds = allOffhands - "off_banner",
-        defaultWeaponId = "wpn_fan_blades", defaultOffhandId = "off_cleanser"
+        defaultWeaponId = "wpn_fan_blades", defaultOffhandId = "off_cleanser",
+        ultimateId = "ult_green"
     )
 
     val BLUE = HeroDef(
@@ -77,7 +82,8 @@ object Party {
         maxHp = 60, baseAttack = 8,
         weaponIds = allWeapons - "wpn_piercer",
         offhandIds = allOffhands - "off_cleanser",
-        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_tower_shield"
+        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_tower_shield",
+        ultimateId = "ult_blue"
     )
 
     val VIOLET = HeroDef(
@@ -85,7 +91,8 @@ object Party {
         maxHp = 40, baseAttack = 10,
         weaponIds = allWeapons - "wpn_ember_blade",
         offhandIds = allOffhands - "off_spiked_shield",
-        defaultWeaponId = "wpn_reaper", defaultOffhandId = "off_detonator"
+        defaultWeaponId = "wpn_reaper", defaultOffhandId = "off_detonator",
+        ultimateId = "ult_violet"
     )
 
     val ROSTER = listOf(RED, ORANGE, YELLOW, GREEN, BLUE, VIOLET)
@@ -112,7 +119,7 @@ fun Loadout.toUnit(): CombatUnit = CombatUnit(
     hp = hero.maxHp,
     team = Team.PLAYER,
     baseAttack = hero.baseAttack + weapon.attackBonus,
-    abilities = buildAbilities(weapon, offhand)
+    abilities = buildAbilities(weapon, offhand, extra = listOf(Ultimates.REGISTRY.getValue(hero.ultimateId)))
 )
 
 /**
@@ -121,30 +128,54 @@ fun Loadout.toUnit(): CombatUnit = CombatUnit(
  */
 object Battles {
 
-    val count = 5
-
-    fun create(index: Int, party: List<Loadout>): BattleState {
-        val players = party.map { it.toUnit() }
-        val enemies = when (index) {
-            0 -> listOf(
-                Enemies.grunt("enemy_1"), Enemies.grunt("enemy_2"), Enemies.grunt("enemy_3")
-            )
-            1 -> listOf(
+    private val setups: List<() -> List<CombatUnit>> = listOf(
+        // 1: learn to tap
+        {
+            listOf(Enemies.grunt("enemy_1"), Enemies.grunt("enemy_2"), Enemies.grunt("enemy_3"))
+        },
+        // 2: poison shows up
+        {
+            listOf(
                 Enemies.grunt("enemy_1"), Enemies.stinger("enemy_2"),
                 Enemies.stinger("enemy_3"), Enemies.grunt("enemy_4")
             )
-            2 -> listOf(
+        },
+        // 3: healers make you pick targets
+        {
+            listOf(
                 Enemies.shaman("enemy_1"), Enemies.grunt("enemy_2"),
                 Enemies.grunt("enemy_3"), Enemies.shaman("enemy_4")
             )
-            3 -> listOf(
-                Enemies.hexer("enemy_1"), Enemies.stinger("enemy_2"), Enemies.stinger("enemy_3")
-            )
-            else -> listOf(
+        },
+        // 4: first telegraph
+        {
+            listOf(Enemies.hexer("enemy_1"), Enemies.stinger("enemy_2"), Enemies.stinger("enemy_3"))
+        },
+        // 5: the Brute behind a line
+        {
+            listOf(
                 Enemies.brute("enemy_1"), Enemies.grunt("enemy_2"),
                 Enemies.shaman("enemy_3"), Enemies.stinger("enemy_4")
             )
+        },
+        // 6: two telegraphs at once - who do you stun?
+        {
+            listOf(Enemies.brute("enemy_1"), Enemies.hexer("enemy_2"), Enemies.stinger("enemy_3"))
+        },
+        // 7: elites behind healers
+        {
+            listOf(
+                Enemies.brute("enemy_1"), Enemies.shaman("enemy_2"),
+                Enemies.shaman("enemy_3"), Enemies.hexer("enemy_4")
+            )
         }
+    )
+
+    val count = setups.size
+
+    fun create(index: Int, party: List<Loadout>): BattleState {
+        val players = party.map { it.toUnit() }
+        val enemies = setups[index.coerceIn(0, setups.lastIndex)]()
         // Three heroes at ~2 energy per action need a bigger pool than two did.
         return BattleState(
             units = players + enemies,

@@ -60,6 +60,14 @@ object GameIcons {
         "ic_off_detonator" to IconSpec("DT", Amber),
         "ic_off_cleanser" to IconSpec("CN", Teal),
 
+        // Ultimates, tinted to their hero
+        "ic_ult_red" to IconSpec("UL", Color(0xFFE5484D)),
+        "ic_ult_orange" to IconSpec("UL", Color(0xFFE8823D)),
+        "ic_ult_yellow" to IconSpec("UL", Color(0xFFFFD166)),
+        "ic_ult_green" to IconSpec("UL", Color(0xFF6FCF97)),
+        "ic_ult_blue" to IconSpec("UL", Color(0xFF4AA3FF)),
+        "ic_ult_violet" to IconSpec("UL", Color(0xFFB68CFF)),
+
         // Statuses
         "ic_status_burn" to IconSpec("B", Amber),
         "ic_status_poison" to IconSpec("P", HpGreen),
@@ -67,6 +75,7 @@ object GameIcons {
         "ic_status_weaken" to IconSpec("W", TealDim),
         "ic_status_vulnerable" to IconSpec("V", DangerRed),
         "ic_status_taunt" to IconSpec("T", EnergyGold),
+        "ic_status_thorns" to IconSpec("TH", ShieldBlue),
 
         // Enemy move icons (shown nowhere yet, defined so lookups never miss)
         "ic_atk_basic" to IconSpec("AT", DangerRed),

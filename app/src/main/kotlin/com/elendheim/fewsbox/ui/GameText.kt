@@ -59,13 +59,21 @@ object GameText {
         "venom_spit" to "Venom Spit",
         "crushing_blow" to "Crushing Blow",
         "doom_bolt" to "Doom Bolt",
+        // Ultimates
+        "ult_red" to "Berserk",
+        "ult_orange" to "Inferno",
+        "ult_yellow" to "Sunburst",
+        "ult_green" to "Razor Storm",
+        "ult_blue" to "Phalanx",
+        "ult_violet" to "Terror",
         // Statuses
         "burn" to "Burn",
         "poison" to "Poison",
         "stun" to "Stun",
         "weaken" to "Weaken",
         "vulnerable" to "Vulnerable",
-        "taunt" to "Taunt"
+        "taunt" to "Taunt",
+        "thorns" to "Thorns"
     )
 
     private val statusBlurbs = mapOf(
@@ -74,7 +82,8 @@ object GameText {
         "stun" to "skips its next turn; stunning a charging elite resets the wind-up",
         "weaken" to "deals 30% less damage",
         "vulnerable" to "takes 25% more damage",
-        "taunt" to "enemies are forced to attack this unit"
+        "taunt" to "enemies are forced to attack this unit",
+        "thorns" to "strikes back at attackers for 3 damage per stack per hit"
     )
 
     private val weaponBlurbs = mapOf(
@@ -88,7 +97,7 @@ object GameText {
 
     private val offhandBlurbs = mapOf(
         "off_tower_shield" to "A big shield, given to any ally.",
-        "off_spiked_shield" to "A lighter shield for any ally. Thorns coming later.",
+        "off_spiked_shield" to "A lighter shield for any ally that strikes back at attackers.",
         "off_medkit" to "Heal any ally.",
         "off_banner" to "Pull all enemy attacks onto yourself, plus a small shield.",
         "off_detonator" to "Blow up every Burn stack on the target for burst damage.",

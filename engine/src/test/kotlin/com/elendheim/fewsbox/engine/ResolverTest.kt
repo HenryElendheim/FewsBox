@@ -1,6 +1,8 @@
 package com.elendheim.fewsbox.engine
 
+import com.elendheim.fewsbox.data.Party
 import com.elendheim.fewsbox.data.Statuses
+import com.elendheim.fewsbox.data.toUnit
 import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Condition
 import com.elendheim.fewsbox.engine.ability.Effect
@@ -274,6 +276,37 @@ class ResolverTest {
         assertTrue(hits.all { it.amount == 7 })
         val totalLost = (300 - e1.hp - e2.hp - e3.hp)
         assertEquals(21, totalLost)
+    }
+
+    @Test
+    fun `thorns strikes back per hit without feeding lifesteal`() {
+        val rec = Recorder()
+        val attacker = unit("a", Team.PLAYER, hp = 50, attack = 10)
+        val target = unit("t", Team.ENEMY, hp = 100)
+        val state = battle(attacker, target)
+        val r = resolver(rec)
+
+        r.addStatus(target, "thorns", stacks = 2, duration = 2) // 3 dmg per stack
+        r.resolve(state, attacker, plainHit(1.0f, hits = 2), listOf("t"))
+
+        assertEquals(80, target.hp)      // two 10s in
+        assertEquals(38, attacker.hp)    // two 6s reflected back
+        // Reflected hits land on the attacker, unflagged as crits
+        val onAttacker = rec.all<CombatEvent.DamageDealt>().filter { it.targetId == "a" }
+        assertEquals(listOf(6, 6), onAttacker.map { it.amount })
+    }
+
+    @Test
+    fun `every hero kit carries its ultimate`() {
+        for (loadout in Party.rosterDefaults()) {
+            val unit = loadout.toUnit()
+            assertEquals(3, unit.abilities.size, "${loadout.hero.name} kit size")
+            assertTrue(
+                unit.abilities.any { it.id == loadout.hero.ultimateId },
+                "${loadout.hero.name} missing ultimate"
+            )
+            assertTrue(unit.abilities.last().cooldown > 0, "${loadout.hero.name} ultimate has no cooldown")
+        }
     }
 
     @Test

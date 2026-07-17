@@ -23,5 +23,6 @@ enum class StatusTiming {
 enum class PassiveEffect {
     DAMAGE_DEALT_DOWN,    // Weaken: owner deals magnitude% less
     DAMAGE_TAKEN_UP,      // Vulnerable: owner takes magnitude% more
-    DAMAGE_TAKEN_DOWN     // Fortify-likes, for later
+    DAMAGE_TAKEN_DOWN,    // Fortify-likes, for later
+    THORNS                // owner strikes back: magnitude * stacks flat damage per hit taken
 }

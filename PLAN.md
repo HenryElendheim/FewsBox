@@ -47,17 +47,13 @@ Not written yet. Known fixed points:
 
 - **Fourth party slot** - Party.MAX_SIZE is 3; the code iterates the party
   list everywhere, so this is a constant bump plus balance work
-- **Thorns status** - make Spiked Shield reflect damage properly instead of
-  being a smaller Tower Shield
 - **Modifier slots** - pure functions that rewrite an ability's effect list
   ("+1 hit, -20% per hit", "hits also apply Weaken"). Deepest mixing axis,
   deferred until the base loop is proven fun
-- **Ultimates** - one big cooldown-gated ability per hero. The engine
-  already supports cooldowns, needs design per color
-- **Ability button press feedback** - small scale/pop on tap (shake, ring
-  pulse and turn pacing shipped already)
-- **More battles** - current five ramp up to the Brute; the campaign should
-  continue into boss fights (see grayscale bosses above)
+- **Boss fights** - the campaign now runs seven battles ending in elite
+  duos; next step is the first true grayscale boss (see above)
+- **Ultimate balance pass** - all six ultimates shipped (Berserk, Inferno,
+  Sunburst, Razor Storm, Phalanx, Terror); numbers need playtesting
 - **Sound** - hooks exist via the combat event stream, nothing wired yet
 - **Real art** - swap the color blocks and glyph chips for actual
   characters. Everything renders off iconId lookups, so art lands without
