@@ -95,9 +95,24 @@ object Party {
         ultimateId = "ult_violet"
     )
 
+    // The first grayscale defector: beaten as the campaign boss, then
+    // playable. Not in ROSTER — the UI adds Silver once unlocked.
+    val SILVER = HeroDef(
+        id = "hero_silver", name = "Silver", iconId = "ic_hero_silver",
+        maxHp = 70, baseAttack = 10,
+        weaponIds = allWeapons - "wpn_leech",
+        offhandIds = allOffhands - "off_medkit",
+        defaultWeaponId = "wpn_piercer", defaultOffhandId = "off_tower_shield",
+        ultimateId = "ult_silver"
+    )
+
     val ROSTER = listOf(RED, ORANGE, YELLOW, GREEN, BLUE, VIOLET)
 
     val DEFAULT_PARTY_IDS = setOf("hero_red", "hero_green", "hero_blue")
+
+    const val SILVER_ID = "hero_silver"
+
+    fun silverLoadout() = defaultLoadout(SILVER)
 
     fun defaultLoadout(hero: HeroDef) = Loadout(
         hero = hero,

@@ -310,6 +310,15 @@ class ResolverTest {
     }
 
     @Test
+    fun `silver defects with a full kit of its own`() {
+        val unit = Party.silverLoadout().toUnit()
+        assertEquals(3, unit.abilities.size)
+        assertTrue(unit.abilities.any { it.id == "ult_silver" })
+        assertEquals(5, Party.SILVER.weaponIds.size)
+        assertEquals(5, Party.SILVER.offhandIds.size)
+    }
+
+    @Test
     fun `kill emits unit died and stops further hits on the corpse`() {
         val rec = Recorder()
         val attacker = unit("a", Team.PLAYER, attack = 10)

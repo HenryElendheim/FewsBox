@@ -383,7 +383,21 @@ object Ultimates {
         )
     )
 
-    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR)
+    // SILVER — the boss's storm, in your hands once earned. Slightly tuned
+    // down from the enemy version.
+    val TEMPEST = Ability(
+        id = "ult_silver",
+        iconId = "ic_ult_silver",
+        targeting = Targeting.ALL_ENEMIES,
+        cost = 3,
+        cooldown = 3,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)
+        )
+    )
+
+    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR, TEMPEST)
     val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }
 

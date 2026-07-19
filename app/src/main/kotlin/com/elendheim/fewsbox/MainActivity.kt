@@ -50,16 +50,18 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
     var battleIndex by remember { mutableIntStateOf(saved.battleIndex) }
     var roster by remember { mutableStateOf(saved.roster) }
     var selectedIds by remember { mutableStateOf(saved.selectedIds) }
+    var unlockedIds by remember { mutableStateOf(saved.unlockedIds) }
 
-    // Write-through save: any change to progress, party or gear persists.
-    LaunchedEffect(battleIndex, roster, selectedIds) {
-        SaveStore.save(context, battleIndex, selectedIds, roster)
+    // Write-through save: any change to progress, party, gear or unlocks persists.
+    LaunchedEffect(battleIndex, roster, selectedIds, unlockedIds) {
+        SaveStore.save(context, battleIndex, selectedIds, roster, unlockedIds)
     }
 
     when (screen) {
         Screen.LOADOUT -> LoadoutScreen(
             roster = roster,
             selectedIds = selectedIds,
+            silverLocked = Party.SILVER_ID !in unlockedIds,
             battleIndex = battleIndex,
             battleCount = Battles.count,
             onToggleHero = { heroId ->
@@ -82,7 +84,13 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
         Screen.BATTLE -> BattleScreen(
             vm = vm,
             onVictory = {
-                if (battleIndex < Battles.count - 1) battleIndex++
+                if (battleIndex < Battles.count - 1) {
+                    battleIndex++
+                } else if (Party.SILVER_ID !in unlockedIds) {
+                    // Campaign beaten: Silver defects and joins the roster.
+                    unlockedIds = unlockedIds + Party.SILVER_ID
+                    roster = roster + Party.silverLoadout()
+                }
                 screen = Screen.LOADOUT
             },
             onDefeat = { screen = Screen.LOADOUT }

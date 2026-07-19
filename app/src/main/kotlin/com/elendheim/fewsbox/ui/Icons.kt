@@ -69,6 +69,7 @@ object GameIcons {
         "ic_ult_green" to IconSpec("UL", Color(0xFF6FCF97)),
         "ic_ult_blue" to IconSpec("UL", Color(0xFF4AA3FF)),
         "ic_ult_violet" to IconSpec("UL", Color(0xFFB68CFF)),
+        "ic_ult_silver" to IconSpec("UL", Color(0xFFF7F7F7)),
 
         // Statuses
         "ic_status_burn" to IconSpec("B", Amber),
@@ -100,7 +101,9 @@ object GameIcons {
         "ic_hero_yellow" to Color(0xFFFFD166),
         "ic_hero_green" to Color(0xFF6FCF97),
         "ic_hero_blue" to Color(0xFF4AA3FF),
-        "ic_hero_violet" to Color(0xFFB68CFF)
+        "ic_hero_violet" to Color(0xFFB68CFF),
+        // The defector. Grayscale on your side of the field.
+        "ic_hero_silver" to Color(0xFFF7F7F7)
     )
 
     fun heroColor(iconId: String): Color? = heroColors[iconId]

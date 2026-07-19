@@ -67,6 +67,7 @@ object GameText {
         "ult_green" to "Razor Storm",
         "ult_blue" to "Phalanx",
         "ult_violet" to "Terror",
+        "ult_silver" to "Tempest",
         // Statuses
         "burn" to "Burn",
         "poison" to "Poison",

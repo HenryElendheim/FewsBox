@@ -64,6 +64,7 @@ import com.elendheim.fewsbox.ui.theme.TextMuted
 fun LoadoutScreen(
     roster: List<Loadout>,
     selectedIds: Set<String>,
+    silverLocked: Boolean,
     battleIndex: Int,
     battleCount: Int,
     onToggleHero: (String) -> Unit,
@@ -133,6 +134,28 @@ fun LoadoutScreen(
                                 onLongClick = { info = heroInfo(member) }
                             )
                     )
+                }
+                if (silverLocked) {
+                    // The empty slot. Something gray is waiting at the end.
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(PanelRaised)
+                            .combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    info = InfoContent(
+                                        title = "?",
+                                        subtitle = "Locked",
+                                        lines = listOf("Something gray waits at the end of the campaign.")
+                                    )
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("?", color = TextMuted, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                    }
                 }
             }
 
