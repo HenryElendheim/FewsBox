@@ -72,6 +72,24 @@ object Enemies {
 
     // --- Bosses ---
 
+    // The second grayscale boss (in campaign order, the first you meet).
+    // No telegraph: Ash is an AI boss that smothers the party in slow
+    // death and shields up when pressed. Defectable, per PLAN.md.
+    fun ash(id: String) = CombatUnit(
+        id = id, name = "Ash", iconId = "ic_enemy_ash",
+        maxHp = 120, hp = 120, team = Team.ENEMY, baseAttack = 9,
+        abilities = listOf(EnemyAbilities.ASH_CLOUD, EnemyAbilities.CINDER_SPIT, EnemyAbilities.EMBER_GUARD),
+        aiProfile = AiProfile(
+            weightedMoves = listOf(
+                WeightedMove("ash_cloud", 4),
+                WeightedMove("cinder_spit", 5),
+                WeightedMove("ember_guard", 2)
+            ),
+            nudges = listOf(AiNudge.ShieldWhenThreatened("ember_guard", 5))
+        )
+    )
+
+
     // The first grayscale boss. A short, relentless telegraph: Silver Storm
     // fires every third turn and leaves the party weakened. Per PLAN.md,
     // defeated grayscale bosses eventually defect to the player's side —

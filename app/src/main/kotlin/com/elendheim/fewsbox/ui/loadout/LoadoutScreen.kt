@@ -64,7 +64,7 @@ import com.elendheim.fewsbox.ui.theme.TextMuted
 fun LoadoutScreen(
     roster: List<Loadout>,
     selectedIds: Set<String>,
-    silverLocked: Boolean,
+    lockedCount: Int,
     battleIndex: Int,
     battleCount: Int,
     onToggleHero: (String) -> Unit,
@@ -135,8 +135,8 @@ fun LoadoutScreen(
                             )
                     )
                 }
-                if (silverLocked) {
-                    // The empty slot. Something gray is waiting at the end.
+                repeat(lockedCount) {
+                    // Empty slots. Something gray is waiting out there.
                     Box(
                         Modifier
                             .size(44.dp)

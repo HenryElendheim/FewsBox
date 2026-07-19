@@ -50,11 +50,11 @@ Not written yet. Known fixed points:
 - **Modifier slots** - pure functions that rewrite an ability's effect list
   ("+1 hit, -20% per hit", "hits also apply Weaken"). Deepest mixing axis,
   deferred until the base loop is proven fun
-- **Boss fights** - Silver is in as battle 8, the campaign finale, and the
-  defection works: beat the campaign and Silver joins the roster as the
-  first playable grayscale hero (Tempest ultimate, own gear pools). Next
-  bosses follow the same pattern. Gray remains unbuilt and unbeatable by
-  design
+- **Boss fights** - two grayscale bosses live: Ash (battle 8, an AI boss
+  that smothers the party in burn and poison) and Silver (battle 10, the
+  telegraphing finale). Both defect when their battle falls - the unlock
+  system is generalized, so future bosses are one map entry each. Gray
+  remains unbuilt and unbeatable by design
 - **Ultimate balance pass** - ultimates are meter-based now (fill by
   dealing damage at 2%/point and taking damage at 3%/point, fire at 100%,
   reset to zero); the gain rates and all seven ults need playtesting

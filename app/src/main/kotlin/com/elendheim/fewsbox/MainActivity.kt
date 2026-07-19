@@ -61,7 +61,7 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
         Screen.LOADOUT -> LoadoutScreen(
             roster = roster,
             selectedIds = selectedIds,
-            silverLocked = Party.SILVER_ID !in unlockedIds,
+            lockedCount = Party.UNLOCKABLE_IDS.count { it !in unlockedIds },
             battleIndex = battleIndex,
             battleCount = Battles.count,
             onToggleHero = { heroId ->
@@ -84,13 +84,14 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
         Screen.BATTLE -> BattleScreen(
             vm = vm,
             onVictory = {
-                if (battleIndex < Battles.count - 1) {
-                    battleIndex++
-                } else if (Party.SILVER_ID !in unlockedIds) {
-                    // Campaign beaten: Silver defects and joins the roster.
-                    unlockedIds = unlockedIds + Party.SILVER_ID
-                    roster = roster + Party.silverLoadout()
+                // A fallen boss defects and joins the roster.
+                Battles.unlocks[battleIndex]?.let { heroId ->
+                    if (heroId !in unlockedIds) {
+                        unlockedIds = unlockedIds + heroId
+                        roster = roster + Party.loadoutFor(heroId)
+                    }
                 }
+                if (battleIndex < Battles.count - 1) battleIndex++
                 screen = Screen.LOADOUT
             },
             onDefeat = { screen = Screen.LOADOUT }

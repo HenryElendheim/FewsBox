@@ -44,6 +44,9 @@ object GameText {
         "wpn_violet_reaper" to "Night Reaper",
         "wpn_violet_fang" to "Shadow Fang",
         "wpn_violet_needle" to "Hex Needle",
+        "wpn_ash_cinder" to "Cinderfall",
+        "wpn_ash_smoke" to "Smokebite",
+        "wpn_ash_veil" to "Grey Veil",
         "wpn_silver_edge" to "Storm Edge",
         "wpn_silver_lash" to "Squall Lash",
         "wpn_silver_spike" to "Static Spike",
@@ -68,6 +71,9 @@ object GameText {
         "venom_spit" to "Venom Spit",
         "crushing_blow" to "Crushing Blow",
         "doom_bolt" to "Doom Bolt",
+        "ash_cloud" to "Ash Cloud",
+        "cinder_spit" to "Cinder Spit",
+        "ember_guard" to "Ember Guard",
         "silver_storm" to "Silver Storm",
         // Ultimates
         "ult_red" to "Berserk",
@@ -76,6 +82,7 @@ object GameText {
         "ult_green" to "Razor Storm",
         "ult_blue" to "Phalanx",
         "ult_violet" to "Terror",
+        "ult_ash" to "Ashfall",
         "ult_silver" to "Tempest",
         // Statuses
         "burn" to "Burn",
@@ -116,6 +123,9 @@ object GameText {
         "wpn_violet_reaper" to "An execute: far harder below 30% health.",
         "wpn_violet_fang" to "A vicious single bite.",
         "wpn_violet_needle" to "A prick that leaves the target exposed.",
+        "wpn_ash_cinder" to "A smoldering hit that leaves the target burning.",
+        "wpn_ash_smoke" to "Two choking strikes that leave poison behind.",
+        "wpn_ash_veil" to "A clean strike from inside the smoke.",
         "wpn_silver_edge" to "Three flashing cuts on one target.",
         "wpn_silver_lash" to "Three strikes scattered like weather.",
         "wpn_silver_spike" to "A charged hit that saps strength."

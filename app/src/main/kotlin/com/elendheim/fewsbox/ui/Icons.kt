@@ -21,6 +21,7 @@ private val Teal = Color(0xFF4ECDC4)
 private val TealDim = Color(0xFF6FA8A3)
 private val OrangeHero = Color(0xFFE8823D)
 private val SilverHero = Color(0xFFF7F7F7)
+private val AshHero = Color(0xFFC9C9C9)
 
 object GameIcons {
 
@@ -32,6 +33,10 @@ object GameIcons {
         "ic_enemy_brute" to IconSpec("BR", Color(0xFFEDEDED)),
         "ic_enemy_hexer" to IconSpec("HX", Color(0xFF6E6E6E)),
         "ic_enemy_silver" to IconSpec("SV", Color(0xFFF7F7F7)),
+        "ic_enemy_ash" to IconSpec("AS", Color(0xFFC9C9C9)),
+        "ic_atk_ashcloud" to IconSpec("AC", Color(0xFFC9C9C9)),
+        "ic_atk_cinder" to IconSpec("CS", Color(0xFFC9C9C9)),
+        "ic_def_ember" to IconSpec("EG", Color(0xFFC9C9C9)),
         "ic_atk_storm" to IconSpec("SS", Color(0xFFF7F7F7)),
 
         // Signature weapons (one entry serves weapon chip + ability button)
@@ -53,6 +58,9 @@ object GameIcons {
         "ic_wpn_violet_reaper" to IconSpec("RE", Violet),
         "ic_wpn_violet_fang" to IconSpec("FG", Violet),
         "ic_wpn_violet_needle" to IconSpec("NE", Violet),
+        "ic_wpn_ash_cinder" to IconSpec("CF", AshHero),
+        "ic_wpn_ash_smoke" to IconSpec("SM", AshHero),
+        "ic_wpn_ash_veil" to IconSpec("GV", AshHero),
         "ic_wpn_silver_edge" to IconSpec("ED", SilverHero),
         "ic_wpn_silver_lash" to IconSpec("LS", SilverHero),
         "ic_wpn_silver_spike" to IconSpec("SP", SilverHero),
@@ -78,6 +86,7 @@ object GameIcons {
         "ic_ult_green" to IconSpec("UL", Color(0xFF6FCF97)),
         "ic_ult_blue" to IconSpec("UL", Color(0xFF4AA3FF)),
         "ic_ult_violet" to IconSpec("UL", Color(0xFFB68CFF)),
+        "ic_ult_ash" to IconSpec("UL", Color(0xFFC9C9C9)),
         "ic_ult_silver" to IconSpec("UL", Color(0xFFF7F7F7)),
 
         // Statuses
@@ -111,7 +120,8 @@ object GameIcons {
         "ic_hero_green" to Color(0xFF6FCF97),
         "ic_hero_blue" to Color(0xFF4AA3FF),
         "ic_hero_violet" to Color(0xFFB68CFF),
-        // The defector. Grayscale on your side of the field.
+        // The defectors. Grayscale on your side of the field.
+        "ic_hero_ash" to Color(0xFFC9C9C9),
         "ic_hero_silver" to Color(0xFFF7F7F7)
     )
 

@@ -33,11 +33,11 @@ object SaveStore {
         val battleIndex = prefs.getInt(KEY_BATTLE, 0).coerceIn(0, Battles.count - 1)
 
         val unlocked = (prefs.getStringSet(KEY_UNLOCKED, null) ?: emptySet())
-            .filter { it == Party.SILVER_ID }  // only known unlockables survive
+            .filter { it in Party.UNLOCKABLE_IDS }  // only known unlockables survive
             .toSet()
 
         val baseRoster = Party.rosterDefaults() +
-            if (Party.SILVER_ID in unlocked) listOf(Party.silverLoadout()) else emptyList()
+            Party.UNLOCKABLE_IDS.filter { it in unlocked }.map { Party.loadoutFor(it) }
 
         val roster = baseRoster.map { loadout ->
             val weaponId = prefs.getString("${loadout.hero.id}.weapon", null)

@@ -319,6 +319,17 @@ class ResolverTest {
     }
 
     @Test
+    fun `boss unlocks point at real battles and real heroes`() {
+        for ((battleIndex, heroId) in com.elendheim.fewsbox.data.Battles.unlocks) {
+            assertTrue(battleIndex in 0 until com.elendheim.fewsbox.data.Battles.count)
+            val loadout = Party.loadoutFor(heroId)
+            val unit = loadout.toUnit()
+            assertEquals(3, unit.abilities.size, "$heroId kit size")
+            assertEquals(loadout.hero.ultimateId, unit.ultimateId)
+        }
+    }
+
+    @Test
     fun `silver defects with a full kit of its own`() {
         val unit = Party.silverLoadout().toUnit()
         assertEquals(3, unit.abilities.size)

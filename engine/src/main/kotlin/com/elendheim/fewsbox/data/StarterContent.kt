@@ -173,6 +173,19 @@ object Weapons {
             Effect.DealDamage(multiplier = 0.7f, hits = 1, canCrit = true),
             Effect.ApplyStatus(statusId = "vulnerable", stacks = 1, duration = 2)))
 
+    // --- ASH: everything smolders ---
+    val ASH_CINDER = weapon("wpn_ash_cinder",
+        ability = atk("ash_cinder", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = true),
+            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)))
+    val ASH_SMOKE = weapon("wpn_ash_smoke",
+        ability = atk("ash_smoke", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.65f, hits = 2, canCrit = true),
+            Effect.ApplyStatus(statusId = "poison", stacks = 1, duration = 3)))
+    val ASH_VEIL = weapon("wpn_ash_veil", bonus = 1,
+        ability = atk("ash_veil", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.3f, hits = 1, canCrit = true)))
+
     // --- SILVER: the storm made personal ---
     val SILVER_EDGE = weapon("wpn_silver_edge",
         ability = atk("silver_edge", Targeting.SINGLE_ENEMY,
@@ -192,6 +205,7 @@ object Weapons {
         GREEN_FAN, GREEN_VOLLEY, GREEN_SCYTHE,
         BLUE_HAMMER, BLUE_PIKE, BLUE_UNDERTOW,
         VIOLET_REAPER, VIOLET_FANG, VIOLET_NEEDLE,
+        ASH_CINDER, ASH_SMOKE, ASH_VEIL,
         SILVER_EDGE, SILVER_LASH, SILVER_SPIKE
     )
     val REGISTRY: Map<String, Weapon> = ALL.associateBy { it.id }
@@ -377,7 +391,18 @@ object Ultimates {
         )
     )
 
-    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR, TEMPEST)
+    // ASH — no burst at all: everything just starts dying slowly.
+    val ASHFALL = Ability(
+        id = "ult_ash",
+        iconId = "ic_ult_ash",
+        targeting = Targeting.ALL_ENEMIES,
+        effects = listOf(
+            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3),
+            Effect.ApplyStatus(statusId = "poison", stacks = 2, duration = 3)
+        )
+    )
+
+    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR, ASHFALL, TEMPEST)
     val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }
 
@@ -438,6 +463,34 @@ object EnemyAbilities {
         )
     )
 
+    // Ash's kit: smother everything in slow death, guard when pressed.
+    val ASH_CLOUD = Ability(
+        id = "ash_cloud",
+        iconId = "ic_atk_ashcloud",
+        targeting = Targeting.ALL_ENEMIES,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 0.5f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "burn", stacks = 1, duration = 2)
+        )
+    )
+
+    val CINDER_SPIT = Ability(
+        id = "cinder_spit",
+        iconId = "ic_atk_cinder",
+        targeting = Targeting.SINGLE_ENEMY,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 1.0f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)
+        )
+    )
+
+    val EMBER_GUARD = Ability(
+        id = "ember_guard",
+        iconId = "ic_def_ember",
+        targeting = Targeting.SELF,
+        effects = listOf(Effect.GainShield(amount = 10))
+    )
+
     // Silver's charged payoff — the whole party takes a hit and fights on
     // weakened. The first boss teaches you to respect the ring.
     val SILVER_STORM = Ability(
@@ -450,6 +503,9 @@ object EnemyAbilities {
         )
     )
 
-    val ALL = listOf(BASIC_SLASH, SMALL_GUARD, SMALL_HEAL, VENOM_SPIT, CRUSHING_BLOW, DOOM_BOLT, SILVER_STORM)
+    val ALL = listOf(
+        BASIC_SLASH, SMALL_GUARD, SMALL_HEAL, VENOM_SPIT,
+        CRUSHING_BLOW, DOOM_BOLT, ASH_CLOUD, CINDER_SPIT, EMBER_GUARD, SILVER_STORM
+    )
     val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }

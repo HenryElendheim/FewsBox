@@ -93,8 +93,17 @@ object Party {
         ultimateId = "ult_violet"
     )
 
-    // The first grayscale defector: beaten as the campaign boss, then
-    // playable. Not in ROSTER — the UI adds Silver once unlocked.
+    // Grayscale defectors: beaten as bosses, then playable. Not in ROSTER —
+    // the UI adds them as their battles fall.
+    val ASH = HeroDef(
+        id = "hero_ash", name = "Ash", iconId = "ic_hero_ash",
+        maxHp = 50, baseAttack = 9,
+        weaponIds = listOf("wpn_ash_cinder", "wpn_ash_smoke", "wpn_ash_veil"),
+        offhandIds = allOffhands - "off_banner",
+        defaultWeaponId = "wpn_ash_cinder", defaultOffhandId = "off_detonator",
+        ultimateId = "ult_ash"
+    )
+
     val SILVER = HeroDef(
         id = "hero_silver", name = "Silver", iconId = "ic_hero_silver",
         maxHp = 70, baseAttack = 10,
@@ -108,7 +117,15 @@ object Party {
 
     val DEFAULT_PARTY_IDS = setOf("hero_red", "hero_green", "hero_blue")
 
+    const val ASH_ID = "hero_ash"
     const val SILVER_ID = "hero_silver"
+
+    // Campaign order: Ash falls first, Silver last. Gray never joins.
+    val UNLOCKABLES = listOf(ASH, SILVER)
+    val UNLOCKABLE_IDS = UNLOCKABLES.map { it.id }
+
+    fun loadoutFor(heroId: String): Loadout =
+        defaultLoadout((ROSTER + UNLOCKABLES).first { it.id == heroId })
 
     fun silverLoadout() = defaultLoadout(SILVER)
 
@@ -183,7 +200,20 @@ object Battles {
                 Enemies.shaman("enemy_3"), Enemies.hexer("enemy_4")
             )
         },
-        // 8: SILVER. The first boss, guarded by healers.
+        // 8: ASH. The smothering boss, with stingers stacking poison on top.
+        {
+            listOf(
+                Enemies.stinger("enemy_1"), Enemies.ash("enemy_2"), Enemies.stinger("enemy_3")
+            )
+        },
+        // 9: the gauntlet before the end
+        {
+            listOf(
+                Enemies.brute("enemy_1"), Enemies.hexer("enemy_2"),
+                Enemies.shaman("enemy_3"), Enemies.grunt("enemy_4")
+            )
+        },
+        // 10: SILVER. The finale, guarded by healers.
         {
             listOf(
                 Enemies.shaman("enemy_1"), Enemies.silver("enemy_2"), Enemies.shaman("enemy_3")
@@ -192,6 +222,12 @@ object Battles {
     )
 
     val count = setups.size
+
+    // Clearing these battles turns their boss to your side.
+    val unlocks: Map<Int, String> = mapOf(
+        7 to Party.ASH_ID,
+        9 to Party.SILVER_ID
+    )
 
     fun create(index: Int, party: List<Loadout>): BattleState {
         val players = party.map { it.toUnit() }
