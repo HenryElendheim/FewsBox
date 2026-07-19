@@ -444,6 +444,18 @@ object EnemyAbilities {
         )
     )
 
-    val ALL = listOf(BASIC_SLASH, SMALL_GUARD, SMALL_HEAL, VENOM_SPIT, CRUSHING_BLOW, DOOM_BOLT)
+    // Silver's charged payoff — the whole party takes a hit and fights on
+    // weakened. The first boss teaches you to respect the ring.
+    val SILVER_STORM = Ability(
+        id = "silver_storm",
+        iconId = "ic_atk_storm",
+        targeting = Targeting.ALL_ENEMIES,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 1.1f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)
+        )
+    )
+
+    val ALL = listOf(BASIC_SLASH, SMALL_GUARD, SMALL_HEAL, VENOM_SPIT, CRUSHING_BLOW, DOOM_BOLT, SILVER_STORM)
     val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }

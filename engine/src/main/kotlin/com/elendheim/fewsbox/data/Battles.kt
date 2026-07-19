@@ -168,6 +168,12 @@ object Battles {
                 Enemies.brute("enemy_1"), Enemies.shaman("enemy_2"),
                 Enemies.shaman("enemy_3"), Enemies.hexer("enemy_4")
             )
+        },
+        // 8: SILVER. The first boss, guarded by healers.
+        {
+            listOf(
+                Enemies.shaman("enemy_1"), Enemies.silver("enemy_2"), Enemies.shaman("enemy_3")
+            )
         }
     )
 

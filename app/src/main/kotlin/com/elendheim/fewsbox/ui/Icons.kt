@@ -29,6 +29,8 @@ object GameIcons {
         "ic_enemy_shaman" to IconSpec("SH", Color(0xFF8A8A8A)),
         "ic_enemy_brute" to IconSpec("BR", Color(0xFFEDEDED)),
         "ic_enemy_hexer" to IconSpec("HX", Color(0xFF6E6E6E)),
+        "ic_enemy_silver" to IconSpec("SV", Color(0xFFF7F7F7)),
+        "ic_atk_storm" to IconSpec("SS", Color(0xFFF7F7F7)),
 
         // Weapon abilities
         "ic_atk_cleave" to IconSpec("CL", Accent),

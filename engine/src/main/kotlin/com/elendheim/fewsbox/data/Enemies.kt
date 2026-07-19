@@ -69,4 +69,17 @@ object Enemies {
         abilities = listOf(EnemyAbilities.DOOM_BOLT),
         charge = ChargeState(chargingAbilityId = "doom_bolt", turnsRequired = 2)
     )
+
+    // --- Bosses ---
+
+    // The first grayscale boss. A short, relentless telegraph: Silver Storm
+    // fires every third turn and leaves the party weakened. Per PLAN.md,
+    // defeated grayscale bosses eventually defect to the player's side —
+    // Silver is the first candidate. Gray never will.
+    fun silver(id: String) = CombatUnit(
+        id = id, name = "Silver", iconId = "ic_enemy_silver",
+        maxHp = 150, hp = 150, team = Team.ENEMY, baseAttack = 13,
+        abilities = listOf(EnemyAbilities.SILVER_STORM),
+        charge = ChargeState(chargingAbilityId = "silver_storm", turnsRequired = 2)
+    )
 }

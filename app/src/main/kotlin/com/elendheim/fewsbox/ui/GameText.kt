@@ -59,6 +59,7 @@ object GameText {
         "venom_spit" to "Venom Spit",
         "crushing_blow" to "Crushing Blow",
         "doom_bolt" to "Doom Bolt",
+        "silver_storm" to "Silver Storm",
         // Ultimates
         "ult_red" to "Berserk",
         "ult_orange" to "Inferno",

@@ -50,8 +50,11 @@ Not written yet. Known fixed points:
 - **Modifier slots** - pure functions that rewrite an ability's effect list
   ("+1 hit, -20% per hit", "hits also apply Weaken"). Deepest mixing axis,
   deferred until the base loop is proven fun
-- **Boss fights** - the campaign now runs seven battles ending in elite
-  duos; next step is the first true grayscale boss (see above)
+- **Boss fights** - Silver is in as battle 8, the campaign finale: a
+  150 HP boss charging a party-wide weakening storm behind two healers.
+  Pure enemy for now; the defection mechanic (Silver joining the roster
+  after defeat) is still future work, and Gray remains unbuilt and
+  unbeatable by design
 - **Ultimate balance pass** - all six ultimates shipped (Berserk, Inferno,
   Sunburst, Razor Storm, Phalanx, Terror); numbers need playtesting
 - **Sound** - hooks exist via the combat event stream, nothing wired yet
