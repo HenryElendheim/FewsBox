@@ -35,10 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Targeting
 import com.elendheim.fewsbox.engine.event.CombatEvent
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.model.TurnPhase
+import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.InfoContent
 import com.elendheim.fewsbox.ui.InfoOverlay
@@ -66,22 +68,23 @@ fun BattleScreen(
     var activeActorId by remember { mutableStateOf<String?>(null) }
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
-    // Event-driven feedback. Today: flashes, floating numbers, screen shake.
-    // Later the same collection point drives sprites, particles and sound.
-    val flashes = remember { mutableStateMapOf<String, Int>() }
+    // Event-driven feedback: floating numbers, status announcements and
+    // screen shake. Later the same collection point drives real animations.
     val floaties = remember { mutableStateMapOf<String, List<Floaty>>() }
     val shake = remember { Animatable(0f) }
 
     LaunchedEffect(vm) {
         var floatyKey = 0L
-        fun addFloaty(unitId: String, text: String, color: Color) {
+        fun addFloaty(unitId: String, text: String, color: Color, label: Boolean = false) {
             val key = floatyKey++
-            floaties[unitId] = (floaties[unitId] ?: emptyList()) + Floaty(key, text, color)
+            floaties[unitId] = (floaties[unitId] ?: emptyList()) + Floaty(key, text, color, label)
             launch {
-                delay(850)
+                delay(if (label) 1000L else 850L)
                 floaties[unitId] = (floaties[unitId] ?: emptyList()).filterNot { it.key == key }
             }
         }
+        fun statusColor(statusId: String): Color =
+            Statuses.REGISTRY[statusId]?.let { GameIcons[it.iconId].tint } ?: TextMuted
         fun shakeScreen() {
             launch {
                 shake.snapTo(0f)
@@ -100,17 +103,27 @@ fun BattleScreen(
         vm.events.collect { event ->
             when (event) {
                 is CombatEvent.DamageDealt -> {
-                    flashes[event.targetId] = (flashes[event.targetId] ?: 0) + 1
                     addFloaty(event.targetId, "-${event.amount}", if (event.isCrit) EnergyGold else Accent)
                     // Big hits and crits rattle the whole screen.
                     if (event.isCrit || event.amount >= 12) shakeScreen()
                 }
-                is CombatEvent.StatusTicked -> {
-                    flashes[event.targetId] = (flashes[event.targetId] ?: 0) + 1
-                    addFloaty(event.targetId, "-${event.amount}", TextMuted)
-                }
+                is CombatEvent.StatusTicked ->
+                    addFloaty(event.targetId, "-${event.amount}", statusColor(event.statusId))
                 is CombatEvent.Healed -> addFloaty(event.targetId, "+${event.amount}", HpGreen)
                 is CombatEvent.ShieldGained -> addFloaty(event.targetId, "+${event.amount}", ShieldBlue)
+                // The status announcement: what just landed on whom, in the
+                // status's own color. Placeholder for real effect animations.
+                is CombatEvent.StatusApplied ->
+                    addFloaty(event.targetId, GameText.name(event.statusId).uppercase(),
+                        statusColor(event.statusId), label = true)
+                is CombatEvent.StatusConsumed ->
+                    addFloaty(event.targetId, "${GameText.name(event.statusId).uppercase()} BURST",
+                        statusColor(event.statusId), label = true)
+                is CombatEvent.TurnSkipped ->
+                    addFloaty(event.unitId, "STUNNED", statusColor("stun"), label = true)
+                is CombatEvent.ChargeFired ->
+                    addFloaty(event.unitId, GameText.name(event.abilityId).uppercase(),
+                        Accent, label = true)
                 else -> {}
             }
         }
@@ -163,7 +176,6 @@ fun BattleScreen(
                         unit = enemy,
                         isTargetable = targetable,
                         isActiveActor = false,
-                        flashCount = flashes[enemy.id] ?: 0,
                         floaties = floaties[enemy.id] ?: emptyList(),
                         onClick = { if (targetable) useAbilityOn(enemy.id) },
                         onLongClick = { info = GameText.unitInfo(enemy) }
@@ -182,7 +194,6 @@ fun BattleScreen(
                         unit = player,
                         isTargetable = allyTargetable,
                         isActiveActor = player.id == activeActor?.id,
-                        flashCount = flashes[player.id] ?: 0,
                         floaties = floaties[player.id] ?: emptyList(),
                         onLongClick = { info = GameText.unitInfo(player) },
                         onClick = {

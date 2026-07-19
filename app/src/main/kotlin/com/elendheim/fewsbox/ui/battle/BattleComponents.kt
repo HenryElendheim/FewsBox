@@ -1,6 +1,5 @@
 package com.elendheim.fewsbox.ui.battle
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -57,8 +56,8 @@ import com.elendheim.fewsbox.ui.theme.PanelRaised
 import com.elendheim.fewsbox.ui.theme.ShieldBlue
 import com.elendheim.fewsbox.ui.theme.TextMuted
 
-/** One floating combat number above a unit. */
-data class Floaty(val key: Long, val text: String, val color: Color)
+/** One floating combat number or status label above a unit. */
+data class Floaty(val key: Long, val text: String, val color: Color, val label: Boolean = false)
 
 @Composable
 fun HpBar(hp: Int, maxHp: Int, modifier: Modifier = Modifier) {
@@ -152,17 +151,10 @@ fun UnitCard(
     unit: CombatUnit,
     isTargetable: Boolean,
     isActiveActor: Boolean,
-    flashCount: Int,
     floaties: List<Floaty>,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
-    // Hit flash hook: today a red tint, later a hurt animation + particles.
-    val flash by animateColorAsState(
-        targetValue = if (flashCount % 2 == 1) Color(0x66E5484D) else Color.Transparent,
-        animationSpec = tween(durationMillis = 180),
-        label = "hitFlash"
-    )
     val deadAlpha by animateFloatAsState(
         targetValue = if (unit.isAlive) 1f else 0.18f,
         animationSpec = tween(durationMillis = 500),
@@ -218,12 +210,6 @@ fun UnitCard(
                 } else {
                     IconChip(unit.iconId, size = 52)
                 }
-                Box(
-                    Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(flash)
-                )
             }
             if (unit.shield > 0) {
                 Box(
@@ -257,7 +243,7 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
             Text(
                 text = floaty.text,
                 color = floaty.color,
-                fontSize = 24.sp,
+                fontSize = if (floaty.label) 13.sp else 24.sp,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier
                     .graphicsLayer {
