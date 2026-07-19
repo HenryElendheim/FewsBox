@@ -1,0 +1,43 @@
+name: Release
+
+# Manually triggered: builds the APK, then creates the tagged release with
+# it attached. Keeps release notes consistent across versions.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. v1.1"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Engine tests
+        run: ./gradlew :engine:test
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk FewsBox.apk
+
+      - name: Create release with APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.version }}" FewsBox.apk \
+            --target "${{ github.ref_name }}" \
+            --title "FewsBox ${{ inputs.version }}" \
+            --notes "FewsBox is a turn-based combat RPG for Android. You mix weapons, offhands and status effects into combos and fight tactical battles."
