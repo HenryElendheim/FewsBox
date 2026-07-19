@@ -2,13 +2,12 @@ package com.elendheim.fewsbox.data
 
 import com.elendheim.fewsbox.engine.model.BattleState
 import com.elendheim.fewsbox.engine.model.CombatUnit
-import com.elendheim.fewsbox.engine.model.ResourceState
 import com.elendheim.fewsbox.engine.model.Team
 
 /**
- * A hero on the roster. Each color has its own restricted equipment pools —
- * five of the six weapons and five of the six offhands — so every hero is
- * missing a different piece and no two builds play the same.
+ * A hero on the roster. Each color carries its own three signature weapons
+ * that nobody else can use, plus a restricted slice of the shared offhands —
+ * kits read as personality, not shopping.
  */
 data class HeroDef(
     val id: String,
@@ -35,7 +34,6 @@ object Party {
     // Battle party cap. The roster is bigger; you pick who fights.
     const val MAX_SIZE = 3
 
-    private val allWeapons = Weapons.ALL.map { it.id }
     private val allOffhands = Offhands.ALL.map { it.id }
 
     // The rainbow roster. Hidden colors (Pink, Black, White) and the
@@ -44,54 +42,54 @@ object Party {
     val RED = HeroDef(
         id = "hero_red", name = "Red", iconId = "ic_hero_red",
         maxHp = 55, baseAttack = 11,
-        weaponIds = allWeapons - "wpn_fan_blades",
+        weaponIds = listOf("wpn_red_maul", "wpn_red_twin", "wpn_red_guillotine"),
         offhandIds = allOffhands - "off_medkit",
-        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_spiked_shield",
+        defaultWeaponId = "wpn_red_maul", defaultOffhandId = "off_spiked_shield",
         ultimateId = "ult_red"
     )
 
     val ORANGE = HeroDef(
         id = "hero_orange", name = "Orange", iconId = "ic_hero_orange",
         maxHp = 42, baseAttack = 10,
-        weaponIds = allWeapons - "wpn_leech",
+        weaponIds = listOf("wpn_orange_brand", "wpn_orange_whip", "wpn_orange_fan"),
         offhandIds = allOffhands - "off_tower_shield",
-        defaultWeaponId = "wpn_ember_blade", defaultOffhandId = "off_detonator",
+        defaultWeaponId = "wpn_orange_brand", defaultOffhandId = "off_detonator",
         ultimateId = "ult_orange"
     )
 
     val YELLOW = HeroDef(
         id = "hero_yellow", name = "Yellow", iconId = "ic_hero_yellow",
         maxHp = 48, baseAttack = 8,
-        weaponIds = allWeapons - "wpn_reaper",
+        weaponIds = listOf("wpn_yellow_siphon", "wpn_yellow_lance", "wpn_yellow_bell"),
         offhandIds = allOffhands - "off_detonator",
-        defaultWeaponId = "wpn_leech", defaultOffhandId = "off_medkit",
+        defaultWeaponId = "wpn_yellow_siphon", defaultOffhandId = "off_medkit",
         ultimateId = "ult_yellow"
     )
 
     val GREEN = HeroDef(
         id = "hero_green", name = "Green", iconId = "ic_hero_green",
         maxHp = 45, baseAttack = 9,
-        weaponIds = allWeapons - "wpn_cleaver",
+        weaponIds = listOf("wpn_green_fan", "wpn_green_volley", "wpn_green_scythe"),
         offhandIds = allOffhands - "off_banner",
-        defaultWeaponId = "wpn_fan_blades", defaultOffhandId = "off_cleanser",
+        defaultWeaponId = "wpn_green_fan", defaultOffhandId = "off_cleanser",
         ultimateId = "ult_green"
     )
 
     val BLUE = HeroDef(
         id = "hero_blue", name = "Blue", iconId = "ic_hero_blue",
         maxHp = 60, baseAttack = 8,
-        weaponIds = allWeapons - "wpn_piercer",
+        weaponIds = listOf("wpn_blue_hammer", "wpn_blue_pike", "wpn_blue_undertow"),
         offhandIds = allOffhands - "off_cleanser",
-        defaultWeaponId = "wpn_cleaver", defaultOffhandId = "off_tower_shield",
+        defaultWeaponId = "wpn_blue_hammer", defaultOffhandId = "off_tower_shield",
         ultimateId = "ult_blue"
     )
 
     val VIOLET = HeroDef(
         id = "hero_violet", name = "Violet", iconId = "ic_hero_violet",
         maxHp = 40, baseAttack = 10,
-        weaponIds = allWeapons - "wpn_ember_blade",
+        weaponIds = listOf("wpn_violet_reaper", "wpn_violet_fang", "wpn_violet_needle"),
         offhandIds = allOffhands - "off_spiked_shield",
-        defaultWeaponId = "wpn_reaper", defaultOffhandId = "off_detonator",
+        defaultWeaponId = "wpn_violet_reaper", defaultOffhandId = "off_detonator",
         ultimateId = "ult_violet"
     )
 
@@ -100,9 +98,9 @@ object Party {
     val SILVER = HeroDef(
         id = "hero_silver", name = "Silver", iconId = "ic_hero_silver",
         maxHp = 70, baseAttack = 10,
-        weaponIds = allWeapons - "wpn_leech",
+        weaponIds = listOf("wpn_silver_edge", "wpn_silver_lash", "wpn_silver_spike"),
         offhandIds = allOffhands - "off_medkit",
-        defaultWeaponId = "wpn_piercer", defaultOffhandId = "off_tower_shield",
+        defaultWeaponId = "wpn_silver_edge", defaultOffhandId = "off_tower_shield",
         ultimateId = "ult_silver"
     )
 
@@ -134,7 +132,8 @@ fun Loadout.toUnit(): CombatUnit = CombatUnit(
     hp = hero.maxHp,
     team = Team.PLAYER,
     baseAttack = hero.baseAttack + weapon.attackBonus,
-    abilities = buildAbilities(weapon, offhand, extra = listOf(Ultimates.REGISTRY.getValue(hero.ultimateId)))
+    abilities = buildAbilities(weapon, offhand, extra = listOf(Ultimates.REGISTRY.getValue(hero.ultimateId))),
+    ultimateId = hero.ultimateId
 )
 
 /**
@@ -197,10 +196,6 @@ object Battles {
     fun create(index: Int, party: List<Loadout>): BattleState {
         val players = party.map { it.toUnit() }
         val enemies = setups[index.coerceIn(0, setups.lastIndex)]()
-        // Three heroes at ~2 energy per action need a bigger pool than two did.
-        return BattleState(
-            units = players + enemies,
-            resources = ResourceState(energy = 6, maxEnergy = 6, regenPerRound = 4)
-        )
+        return BattleState(units = players + enemies)
     }
 }

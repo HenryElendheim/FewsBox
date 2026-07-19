@@ -297,7 +297,7 @@ class ResolverTest {
     }
 
     @Test
-    fun `every hero kit carries its ultimate`() {
+    fun `every hero kit carries its meter-gated ultimate and own weapons`() {
         for (loadout in Party.rosterDefaults()) {
             val unit = loadout.toUnit()
             assertEquals(3, unit.abilities.size, "${loadout.hero.name} kit size")
@@ -305,7 +305,16 @@ class ResolverTest {
                 unit.abilities.any { it.id == loadout.hero.ultimateId },
                 "${loadout.hero.name} missing ultimate"
             )
-            assertTrue(unit.abilities.last().cooldown > 0, "${loadout.hero.name} ultimate has no cooldown")
+            assertEquals(loadout.hero.ultimateId, unit.ultimateId, "${loadout.hero.name} meter not wired")
+            assertEquals(3, loadout.hero.weaponIds.size, "${loadout.hero.name} weapon count")
+            // Signature weapons: nobody shares an arsenal.
+            for (other in Party.ROSTER) {
+                if (other.id == loadout.hero.id) continue
+                assertTrue(
+                    loadout.hero.weaponIds.none { it in other.weaponIds },
+                    "${loadout.hero.name} shares weapons with ${other.name}"
+                )
+            }
         }
     }
 
@@ -314,7 +323,8 @@ class ResolverTest {
         val unit = Party.silverLoadout().toUnit()
         assertEquals(3, unit.abilities.size)
         assertTrue(unit.abilities.any { it.id == "ult_silver" })
-        assertEquals(5, Party.SILVER.weaponIds.size)
+        assertEquals("ult_silver", unit.ultimateId)
+        assertEquals(3, Party.SILVER.weaponIds.size)
         assertEquals(5, Party.SILVER.offhandIds.size)
     }
 

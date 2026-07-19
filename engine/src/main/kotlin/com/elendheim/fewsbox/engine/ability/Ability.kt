@@ -9,7 +9,6 @@ data class Ability(
     val id: String,
     val iconId: String,
     val targeting: Targeting,
-    val cost: Int = 0,               // energy cost (player side only)
     val cooldown: Int = 0,           // turns before reusable, 0 = every turn
     val effects: List<Effect>        // resolved in order
 )

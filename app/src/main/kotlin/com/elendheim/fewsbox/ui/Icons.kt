@@ -19,6 +19,8 @@ private val Violet = Color(0xFFB68CFF)
 private val Amber = Color(0xFFE8A33D)
 private val Teal = Color(0xFF4ECDC4)
 private val TealDim = Color(0xFF6FA8A3)
+private val OrangeHero = Color(0xFFE8823D)
+private val SilverHero = Color(0xFFF7F7F7)
 
 object GameIcons {
 
@@ -32,35 +34,42 @@ object GameIcons {
         "ic_enemy_silver" to IconSpec("SV", Color(0xFFF7F7F7)),
         "ic_atk_storm" to IconSpec("SS", Color(0xFFF7F7F7)),
 
-        // Weapon abilities
-        "ic_atk_cleave" to IconSpec("CL", Accent),
-        "ic_atk_fan" to IconSpec("FN", Accent),
-        "ic_atk_pierce" to IconSpec("PI", Accent),
-        "ic_atk_ember" to IconSpec("EM", Amber),
-        "ic_atk_reap" to IconSpec("RP", Violet),
-        "ic_atk_leech" to IconSpec("LC", DangerRed),
+        // Signature weapons (one entry serves weapon chip + ability button)
+        "ic_wpn_red_maul" to IconSpec("MA", DangerRed),
+        "ic_wpn_red_twin" to IconSpec("TW", DangerRed),
+        "ic_wpn_red_guillotine" to IconSpec("GU", DangerRed),
+        "ic_wpn_orange_brand" to IconSpec("BR", OrangeHero),
+        "ic_wpn_orange_whip" to IconSpec("WH", OrangeHero),
+        "ic_wpn_orange_fan" to IconSpec("FN", OrangeHero),
+        "ic_wpn_yellow_siphon" to IconSpec("SI", EnergyGold),
+        "ic_wpn_yellow_lance" to IconSpec("LA", EnergyGold),
+        "ic_wpn_yellow_bell" to IconSpec("BE", EnergyGold),
+        "ic_wpn_green_fan" to IconSpec("FN", HpGreen),
+        "ic_wpn_green_volley" to IconSpec("VO", HpGreen),
+        "ic_wpn_green_scythe" to IconSpec("SC", HpGreen),
+        "ic_wpn_blue_hammer" to IconSpec("HA", ShieldBlue),
+        "ic_wpn_blue_pike" to IconSpec("PK", ShieldBlue),
+        "ic_wpn_blue_undertow" to IconSpec("UN", ShieldBlue),
+        "ic_wpn_violet_reaper" to IconSpec("RE", Violet),
+        "ic_wpn_violet_fang" to IconSpec("FG", Violet),
+        "ic_wpn_violet_needle" to IconSpec("NE", Violet),
+        "ic_wpn_silver_edge" to IconSpec("ED", SilverHero),
+        "ic_wpn_silver_lash" to IconSpec("LS", SilverHero),
+        "ic_wpn_silver_spike" to IconSpec("SP", SilverHero),
 
-        // Offhand abilities
-        "ic_def_tower" to IconSpec("TW", ShieldBlue),
-        "ic_def_spiked" to IconSpec("SP", ShieldBlue),
-        "ic_def_medkit" to IconSpec("MD", HpGreen),
-        "ic_def_banner" to IconSpec("BN", EnergyGold),
-        "ic_def_detonate" to IconSpec("DT", Amber),
-        "ic_def_cleanse" to IconSpec("CN", Teal),
-
-        // Weapons / offhands themselves (loadout screen)
-        "ic_wpn_cleaver" to IconSpec("CL", Accent),
-        "ic_wpn_fan" to IconSpec("FN", Accent),
-        "ic_wpn_piercer" to IconSpec("PI", Accent),
-        "ic_wpn_ember" to IconSpec("EM", Amber),
-        "ic_wpn_reaper" to IconSpec("RP", Violet),
-        "ic_wpn_leech" to IconSpec("LC", DangerRed),
+        // Offhands and their abilities
         "ic_off_tower" to IconSpec("TW", ShieldBlue),
         "ic_off_spiked" to IconSpec("SP", ShieldBlue),
         "ic_off_medkit" to IconSpec("MD", HpGreen),
         "ic_off_banner" to IconSpec("BN", EnergyGold),
         "ic_off_detonator" to IconSpec("DT", Amber),
         "ic_off_cleanser" to IconSpec("CN", Teal),
+        "ic_def_tower" to IconSpec("TW", ShieldBlue),
+        "ic_def_spiked" to IconSpec("SP", ShieldBlue),
+        "ic_def_medkit" to IconSpec("MD", HpGreen),
+        "ic_def_banner" to IconSpec("BN", EnergyGold),
+        "ic_def_detonate" to IconSpec("DT", Amber),
+        "ic_def_cleanse" to IconSpec("CN", Teal),
 
         // Ultimates, tinted to their hero
         "ic_ult_red" to IconSpec("UL", Color(0xFFE5484D)),

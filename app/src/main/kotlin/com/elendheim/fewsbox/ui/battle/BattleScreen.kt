@@ -208,14 +208,16 @@ fun BattleScreen(
             ) {
                 if (activeActor != null) {
                     for (ability in activeActor.abilities) {
-                        val affordable = battle.resources.energy >= ability.cost
-                        val ready = activeActor.cooldownLeft(ability.id) == 0
+                        val isUltimate = ability.id == activeActor.ultimateId
+                        val ready = activeActor.cooldownLeft(ability.id) == 0 &&
+                            (!isUltimate || activeActor.ultReady)
                         AbilityButton(
                             ability = ability,
                             selected = ability.id == selectedAbilityId,
-                            enabled = !inputLocked && affordable && ready,
+                            enabled = !inputLocked && ready,
                             cooldownLeft = activeActor.cooldownLeft(ability.id),
-                            onLongClick = { info = GameText.abilityInfo(ability, activeActor.baseAttack) },
+                            ultPercent = if (isUltimate) activeActor.ultCharge else null,
+                            onLongClick = { info = GameText.abilityInfo(ability, activeActor.baseAttack, isUltimate) },
                             onClick = {
                                 if (ability.targeting.needsChosenTarget()) {
                                     selectedAbilityId =
@@ -243,9 +245,7 @@ fun BattleScreen(
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
-            EnergyPips(battle.resources.energy, battle.resources.maxEnergy)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
         }
 
         InfoOverlay(content = info, onDismiss = { info = null })

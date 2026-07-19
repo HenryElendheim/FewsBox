@@ -90,110 +90,110 @@ object Statuses {
 }
 
 // ----------------------------------------------------------------------------
-//  WEAPONS (6) — each grants one offensive ability
+//  WEAPONS — three signature weapons per hero. No shared pool: every color
+//  has its own arsenal, so kits read as personality, not shopping.
 // ----------------------------------------------------------------------------
 
 object Weapons {
 
-    // 1. CLEAVER — single hard hit. The reliable baseline.
-    val CLEAVER = Weapon(
-        id = "wpn_cleaver",
-        iconId = "ic_wpn_cleaver",
-        attackBonus = 2,
-        grantedAbility = Ability(
-            id = "atk_cleave",
-            iconId = "ic_atk_cleave",
-            targeting = Targeting.SINGLE_ENEMY,
-            cost = 2,
-            effects = listOf(
-                Effect.DealDamage(multiplier = 1.6f, hits = 1, canCrit = true)
-            )
-        )
-    )
+    private fun weapon(id: String, bonus: Int = 0, ability: Ability) =
+        Weapon(id = id, iconId = "ic_$id", attackBonus = bonus, grantedAbility = ability)
 
-    // 2. FAN BLADES — 3 hits spread across random enemies. Trash-mob clearer.
-    val FAN_BLADES = Weapon(
-        id = "wpn_fan_blades",
-        iconId = "ic_wpn_fan",
-        grantedAbility = Ability(
-            id = "atk_fan",
-            iconId = "ic_atk_fan",
-            targeting = Targeting.RANDOM_ENEMIES_MULTI,
-            cost = 3,
-            effects = listOf(
-                Effect.DealDamage(multiplier = 0.7f, hits = 3, canCrit = true)
-            )
-        )
-    )
+    private fun atk(id: String, targeting: Targeting, vararg effects: Effect) =
+        Ability(id = "atk_$id", iconId = "ic_wpn_$id", targeting = targeting, effects = effects.toList())
 
-    // 3. PIERCER — 3 hits all on one target. Shreds a single elite.
-    val PIERCER = Weapon(
-        id = "wpn_piercer",
-        iconId = "ic_wpn_piercer",
-        grantedAbility = Ability(
-            id = "atk_pierce",
-            iconId = "ic_atk_pierce",
-            targeting = Targeting.SINGLE_ENEMY,
-            cost = 3,
-            effects = listOf(
-                Effect.DealDamage(multiplier = 0.65f, hits = 3, canCrit = true)
-            )
-        )
-    )
+    // --- RED: brutal single-target ---
+    val RED_MAUL = weapon("wpn_red_maul", bonus = 2,
+        ability = atk("red_maul", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.8f, hits = 1, canCrit = true)))
+    val RED_TWIN = weapon("wpn_red_twin",
+        ability = atk("red_twin", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.95f, hits = 2, canCrit = true)))
+    val RED_GUILLOTINE = weapon("wpn_red_guillotine", bonus = 1,
+        ability = atk("red_guillotine", Targeting.SINGLE_ENEMY,
+            Effect.ExecuteDamage(multiplier = 1.0f, hpThreshold = 0.35f, bonusMultiplier = 1.4f)))
 
-    // 4. EMBER BLADE — moderate hit + applies Burn. Sets up detonation combos.
-    val EMBER_BLADE = Weapon(
-        id = "wpn_ember_blade",
-        iconId = "ic_wpn_ember",
-        grantedAbility = Ability(
-            id = "atk_ember",
-            iconId = "ic_atk_ember",
-            targeting = Targeting.SINGLE_ENEMY,
-            cost = 2,
-            effects = listOf(
-                Effect.DealDamage(multiplier = 1.0f, hits = 1, canCrit = true),
-                Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)
-            )
-        )
-    )
+    // --- ORANGE: everything burns ---
+    val ORANGE_BRAND = weapon("wpn_orange_brand",
+        ability = atk("orange_brand", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.0f, hits = 1, canCrit = true),
+            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)))
+    val ORANGE_WHIP = weapon("wpn_orange_whip",
+        ability = atk("orange_whip", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.6f, hits = 2, canCrit = true),
+            Effect.ApplyStatus(statusId = "burn", stacks = 1, duration = 3)))
+    val ORANGE_FAN = weapon("wpn_orange_fan",
+        ability = atk("orange_fan", Targeting.RANDOM_ENEMIES_MULTI,
+            Effect.DealDamage(multiplier = 0.55f, hits = 3, canCrit = true)))
 
-    // 5. REAPER — execute: big bonus below 30% HP. The finisher.
-    val REAPER = Weapon(
-        id = "wpn_reaper",
-        iconId = "ic_wpn_reaper",
-        attackBonus = 1,
-        grantedAbility = Ability(
-            id = "atk_reap",
-            iconId = "ic_atk_reap",
-            targeting = Targeting.SINGLE_ENEMY,
-            cost = 2,
-            effects = listOf(
-                Effect.ExecuteDamage(
-                    multiplier = 1.0f,
-                    hpThreshold = 0.30f,
-                    bonusMultiplier = 1.5f
-                )
-            )
-        )
-    )
+    // --- YELLOW: sustain and setup ---
+    val YELLOW_SIPHON = weapon("wpn_yellow_siphon",
+        ability = atk("yellow_siphon", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.1f, hits = 1, canCrit = true),
+            Effect.Lifesteal(fraction = 0.6f)))
+    val YELLOW_LANCE = weapon("wpn_yellow_lance", bonus = 1,
+        ability = atk("yellow_lance", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.4f, hits = 1, canCrit = true)))
+    val YELLOW_BELL = weapon("wpn_yellow_bell",
+        ability = atk("yellow_bell", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)))
 
-    // 6. LEECH — lifesteal. Sustain through offense.
-    val LEECH = Weapon(
-        id = "wpn_leech",
-        iconId = "ic_wpn_leech",
-        grantedAbility = Ability(
-            id = "atk_leech",
-            iconId = "ic_atk_leech",
-            targeting = Targeting.SINGLE_ENEMY,
-            cost = 2,
-            effects = listOf(
-                Effect.DealDamage(multiplier = 1.2f, hits = 1, canCrit = true),
-                Effect.Lifesteal(fraction = 0.5f)
-            )
-        )
-    )
+    // --- GREEN: many blades ---
+    val GREEN_FAN = weapon("wpn_green_fan",
+        ability = atk("green_fan", Targeting.RANDOM_ENEMIES_MULTI,
+            Effect.DealDamage(multiplier = 0.7f, hits = 3, canCrit = true)))
+    val GREEN_VOLLEY = weapon("wpn_green_volley",
+        ability = atk("green_volley", Targeting.RANDOM_ENEMIES_MULTI,
+            Effect.DealDamage(multiplier = 0.5f, hits = 4, canCrit = true)))
+    val GREEN_SCYTHE = weapon("wpn_green_scythe",
+        ability = atk("green_scythe", Targeting.ADJACENT_ENEMIES,
+            Effect.DealDamage(multiplier = 0.8f, hits = 1, canCrit = true)))
 
-    val ALL = listOf(CLEAVER, FAN_BLADES, PIERCER, EMBER_BLADE, REAPER, LEECH)
+    // --- BLUE: steady pressure ---
+    val BLUE_HAMMER = weapon("wpn_blue_hammer", bonus = 1,
+        ability = atk("blue_hammer", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.5f, hits = 1, canCrit = true)))
+    val BLUE_PIKE = weapon("wpn_blue_pike",
+        ability = atk("blue_pike", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.6f, hits = 3, canCrit = true)))
+    val BLUE_UNDERTOW = weapon("wpn_blue_undertow",
+        ability = atk("blue_undertow", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.75f, hits = 2, canCrit = true)))
+
+    // --- VIOLET: death and hexes ---
+    val VIOLET_REAPER = weapon("wpn_violet_reaper", bonus = 1,
+        ability = atk("violet_reaper", Targeting.SINGLE_ENEMY,
+            Effect.ExecuteDamage(multiplier = 1.0f, hpThreshold = 0.30f, bonusMultiplier = 1.5f)))
+    val VIOLET_FANG = weapon("wpn_violet_fang",
+        ability = atk("violet_fang", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.3f, hits = 1, canCrit = true)))
+    val VIOLET_NEEDLE = weapon("wpn_violet_needle",
+        ability = atk("violet_needle", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.7f, hits = 1, canCrit = true),
+            Effect.ApplyStatus(statusId = "vulnerable", stacks = 1, duration = 2)))
+
+    // --- SILVER: the storm made personal ---
+    val SILVER_EDGE = weapon("wpn_silver_edge",
+        ability = atk("silver_edge", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 0.65f, hits = 3, canCrit = true)))
+    val SILVER_LASH = weapon("wpn_silver_lash",
+        ability = atk("silver_lash", Targeting.RANDOM_ENEMIES_MULTI,
+            Effect.DealDamage(multiplier = 0.6f, hits = 3, canCrit = true)))
+    val SILVER_SPIKE = weapon("wpn_silver_spike",
+        ability = atk("silver_spike", Targeting.SINGLE_ENEMY,
+            Effect.DealDamage(multiplier = 1.2f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)))
+
+    val ALL = listOf(
+        RED_MAUL, RED_TWIN, RED_GUILLOTINE,
+        ORANGE_BRAND, ORANGE_WHIP, ORANGE_FAN,
+        YELLOW_SIPHON, YELLOW_LANCE, YELLOW_BELL,
+        GREEN_FAN, GREEN_VOLLEY, GREEN_SCYTHE,
+        BLUE_HAMMER, BLUE_PIKE, BLUE_UNDERTOW,
+        VIOLET_REAPER, VIOLET_FANG, VIOLET_NEEDLE,
+        SILVER_EDGE, SILVER_LASH, SILVER_SPIKE
+    )
     val REGISTRY: Map<String, Weapon> = ALL.associateBy { it.id }
 }
 
@@ -211,7 +211,6 @@ object Offhands {
             id = "def_tower",
             iconId = "ic_def_tower",
             targeting = Targeting.SINGLE_ALLY,
-            cost = 2,
             effects = listOf(
                 Effect.GainShield(amount = 12)
             )
@@ -226,7 +225,6 @@ object Offhands {
             id = "def_spiked",
             iconId = "ic_def_spiked",
             targeting = Targeting.SINGLE_ALLY,
-            cost = 2,
             effects = listOf(
                 Effect.GainShield(amount = 8),
                 Effect.ApplyStatus(statusId = "thorns", stacks = 1, duration = 2)
@@ -242,7 +240,6 @@ object Offhands {
             id = "def_medkit",
             iconId = "ic_def_medkit",
             targeting = Targeting.SINGLE_ALLY,
-            cost = 2,
             effects = listOf(
                 Effect.Heal(amount = 14)
             )
@@ -257,7 +254,6 @@ object Offhands {
             id = "def_banner",
             iconId = "ic_def_banner",
             targeting = Targeting.SELF,
-            cost = 2,
             effects = listOf(
                 Effect.Taunt(turns = 1),
                 Effect.GainShield(amount = 6)
@@ -273,7 +269,6 @@ object Offhands {
             id = "def_detonate",
             iconId = "ic_def_detonate",
             targeting = Targeting.SINGLE_ENEMY,
-            cost = 2,
             effects = listOf(
                 Effect.ConsumeStatus(
                     statusId = "burn",
@@ -291,7 +286,6 @@ object Offhands {
             id = "def_cleanse",
             iconId = "ic_def_cleanse",
             targeting = Targeting.SINGLE_ALLY,
-            cost = 2,
             effects = listOf(
                 Effect.Cleanse,
                 Effect.GainShield(amount = 5)
@@ -314,8 +308,6 @@ object Ultimates {
         id = "ult_red",
         iconId = "ic_ult_red",
         targeting = Targeting.SINGLE_ENEMY,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.DealDamage(multiplier = 2.4f, hits = 1, canCrit = true)
         )
@@ -326,8 +318,6 @@ object Ultimates {
         id = "ult_orange",
         iconId = "ic_ult_orange",
         targeting = Targeting.ALL_ENEMIES,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.DealDamage(multiplier = 0.5f, hits = 1, canCrit = false),
             Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)
@@ -339,8 +329,6 @@ object Ultimates {
         id = "ult_yellow",
         iconId = "ic_ult_yellow",
         targeting = Targeting.ALL_ALLIES,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.Heal(amount = 10)
         )
@@ -351,8 +339,6 @@ object Ultimates {
         id = "ult_green",
         iconId = "ic_ult_green",
         targeting = Targeting.RANDOM_ENEMIES_MULTI,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.DealDamage(multiplier = 0.6f, hits = 5, canCrit = true)
         )
@@ -363,8 +349,6 @@ object Ultimates {
         id = "ult_blue",
         iconId = "ic_ult_blue",
         targeting = Targeting.ALL_ALLIES,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.GainShield(amount = 8)
         )
@@ -375,8 +359,6 @@ object Ultimates {
         id = "ult_violet",
         iconId = "ic_ult_violet",
         targeting = Targeting.SINGLE_ENEMY,
-        cost = 3,
-        cooldown = 4,
         effects = listOf(
             Effect.DealDamage(multiplier = 0.8f, hits = 1, canCrit = false),
             Effect.ApplyStatus(statusId = "stun", stacks = 1, duration = 1)
@@ -389,8 +371,6 @@ object Ultimates {
         id = "ult_silver",
         iconId = "ic_ult_silver",
         targeting = Targeting.ALL_ENEMIES,
-        cost = 3,
-        cooldown = 3,
         effects = listOf(
             Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = false),
             Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)

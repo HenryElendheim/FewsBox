@@ -1,14 +1,7 @@
 package com.elendheim.fewsbox.engine.model
 
-data class ResourceState(
-    var energy: Int,
-    val maxEnergy: Int,
-    val regenPerRound: Int
-)
-
 data class BattleState(
     val units: List<CombatUnit>,
-    val resources: ResourceState,
     var round: Int = 1,
     var phase: TurnPhase = TurnPhase.PLAYER_INPUT,
     val actedThisRound: MutableSet<String> = mutableSetOf(),

@@ -20,8 +20,12 @@ data class CombatUnit(
     val statuses: MutableList<ActiveStatus> = mutableListOf(),
     val charge: ChargeState? = null, // non-null for elites that telegraph big hits
     val aiProfile: AiProfile? = null, // null for player-controlled units
-    val cooldowns: MutableMap<String, Int> = mutableMapOf() // abilityId -> turns left
+    val cooldowns: MutableMap<String, Int> = mutableMapOf(), // abilityId -> turns left
+    val ultimateId: String? = null,  // which ability is gated by the ult meter
+    var ultCharge: Int = 0           // 0..100, filled by dealing and taking damage
 ) {
+    val ultReady: Boolean get() = ultCharge >= 100
+
     val isAlive: Boolean get() = hp > 0
 
     fun statusStacks(statusId: String): Int =

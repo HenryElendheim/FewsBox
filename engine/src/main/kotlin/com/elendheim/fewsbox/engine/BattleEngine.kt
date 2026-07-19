@@ -34,28 +34,32 @@ class BattleEngine(
     /** Call once after constructing the BattleState. */
     fun startBattle(state: BattleState) {
         emit(CombatEvent.RoundStarted(state.round))
-        emit(CombatEvent.EnergyChanged(state.resources.energy, state.resources.maxEnergy))
         tickPlayerPhaseStart(state)
     }
 
     /**
      * One player unit uses one ability. Returns false if the action is not
-     * legal right now (wrong phase, dead/spent actor, cost, cooldown).
+     * legal right now (wrong phase, dead/spent actor, cooldown, or an
+     * ultimate whose meter isn't full).
      */
     fun playerAction(state: BattleState, actorId: String, abilityId: String, targetIds: List<String>): Boolean {
         if (state.phase != TurnPhase.PLAYER_INPUT) return false
         val actor = state.unitOrNull(actorId) ?: return false
         if (!actor.isAlive || actor.team != Team.PLAYER || actor.id in state.actedThisRound) return false
         val ability = actor.abilities.firstOrNull { it.id == abilityId } ?: return false
-        if (state.resources.energy < ability.cost) return false
         if (actor.cooldownLeft(ability.id) > 0) return false
 
-        state.resources.energy -= ability.cost
-        emit(CombatEvent.EnergyChanged(state.resources.energy, state.resources.maxEnergy))
+        val isUltimate = ability.id == actor.ultimateId
+        if (isUltimate && !actor.ultReady) return false
+
         if (ability.cooldown > 0) actor.cooldowns[ability.id] = ability.cooldown
 
         state.phase = TurnPhase.RESOLVING
         resolver.resolve(state, actor, ability, targetIds)
+        if (isUltimate) {
+            actor.ultCharge = 0
+            emit(CombatEvent.UltChargeChanged(actor.id, 0))
+        }
         state.actedThisRound.add(actor.id)
         if (!checkBattleEnd(state)) state.phase = TurnPhase.PLAYER_INPUT
         return true
@@ -162,10 +166,7 @@ class BattleEngine(
 
     private fun startNextRound(state: BattleState) {
         state.actedThisRound.clear()
-        val res = state.resources
-        res.energy = minOf(res.maxEnergy, res.energy + res.regenPerRound)
         emit(CombatEvent.RoundStarted(state.round))
-        emit(CombatEvent.EnergyChanged(res.energy, res.maxEnergy))
         state.phase = TurnPhase.PLAYER_INPUT
         tickPlayerPhaseStart(state)
     }
@@ -203,6 +204,8 @@ class BattleEngine(
                     emit(CombatEvent.UnitDied(unit.id))
                     return
                 }
+                // Suffering builds the meter too.
+                resolver.gainUltCharge(unit, amount * Resolver.ULT_PER_DAMAGE_TAKEN)
             } else {
                 resolver.healUnit(unit, amount)
                 emit(CombatEvent.StatusTicked(unit.id, def.id, amount))

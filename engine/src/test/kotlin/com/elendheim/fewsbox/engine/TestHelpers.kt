@@ -8,7 +8,6 @@ import com.elendheim.fewsbox.engine.event.CombatEvent
 import com.elendheim.fewsbox.engine.model.BattleState
 import com.elendheim.fewsbox.engine.model.ChargeState
 import com.elendheim.fewsbox.engine.model.CombatUnit
-import com.elendheim.fewsbox.engine.model.ResourceState
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.ai.AiProfile
 import kotlin.random.Random
@@ -20,11 +19,13 @@ fun unit(
     attack: Int = 10,
     abilities: List<Ability> = emptyList(),
     charge: ChargeState? = null,
-    aiProfile: AiProfile? = null
+    aiProfile: AiProfile? = null,
+    ultimateId: String? = null
 ) = CombatUnit(
     id = id, name = id, iconId = "ic_test",
     maxHp = hp, hp = hp, team = team, baseAttack = attack,
-    abilities = abilities, charge = charge, aiProfile = aiProfile
+    abilities = abilities, charge = charge, aiProfile = aiProfile,
+    ultimateId = ultimateId
 )
 
 /** A plain deterministic hit: no crit, so damage math is exact in tests. */
@@ -34,10 +35,7 @@ fun plainHit(multiplier: Float, hits: Int = 1, targeting: Targeting = Targeting.
     effects = listOf(Effect.DealDamage(multiplier = multiplier, hits = hits, canCrit = false))
 )
 
-fun battle(vararg units: CombatUnit, energy: Int = 10) = BattleState(
-    units = units.toList(),
-    resources = ResourceState(energy = energy, maxEnergy = 10, regenPerRound = 3)
-)
+fun battle(vararg units: CombatUnit) = BattleState(units = units.toList())
 
 class Recorder {
     val events = mutableListOf<CombatEvent>()

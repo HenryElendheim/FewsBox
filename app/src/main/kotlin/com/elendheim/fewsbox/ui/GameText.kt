@@ -4,6 +4,7 @@ import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Condition
 import com.elendheim.fewsbox.engine.ability.Effect
+import com.elendheim.fewsbox.engine.ability.Resolver
 import com.elendheim.fewsbox.engine.model.ActiveStatus
 import com.elendheim.fewsbox.engine.model.CombatUnit
 import kotlin.math.roundToInt
@@ -24,20 +25,28 @@ data class InfoContent(
 object GameText {
 
     private val names = mapOf(
-        // Weapons
-        "wpn_cleaver" to "Cleaver",
-        "wpn_fan_blades" to "Fan Blades",
-        "wpn_piercer" to "Piercer",
-        "wpn_ember_blade" to "Ember Blade",
-        "wpn_reaper" to "Reaper",
-        "wpn_leech" to "Leech",
-        // Weapon abilities
-        "atk_cleave" to "Cleave",
-        "atk_fan" to "Fan of Blades",
-        "atk_pierce" to "Pierce",
-        "atk_ember" to "Ember Strike",
-        "atk_reap" to "Reap",
-        "atk_leech" to "Leech Strike",
+        // Signature weapons, three per hero
+        "wpn_red_maul" to "Crimson Maul",
+        "wpn_red_twin" to "Twin Cleavers",
+        "wpn_red_guillotine" to "Guillotine",
+        "wpn_orange_brand" to "Firebrand",
+        "wpn_orange_whip" to "Flare Whip",
+        "wpn_orange_fan" to "Cinder Fan",
+        "wpn_yellow_siphon" to "Sun Siphon",
+        "wpn_yellow_lance" to "Dawn Lance",
+        "wpn_yellow_bell" to "Morning Bell",
+        "wpn_green_fan" to "Leaf Fan",
+        "wpn_green_volley" to "Needle Volley",
+        "wpn_green_scythe" to "Thorn Scythe",
+        "wpn_blue_hammer" to "Tide Hammer",
+        "wpn_blue_pike" to "Frost Pike",
+        "wpn_blue_undertow" to "Undertow",
+        "wpn_violet_reaper" to "Night Reaper",
+        "wpn_violet_fang" to "Shadow Fang",
+        "wpn_violet_needle" to "Hex Needle",
+        "wpn_silver_edge" to "Storm Edge",
+        "wpn_silver_lash" to "Squall Lash",
+        "wpn_silver_spike" to "Static Spike",
         // Offhands
         "off_tower_shield" to "Tower Shield",
         "off_spiked_shield" to "Spiked Shield",
@@ -89,12 +98,27 @@ object GameText {
     )
 
     private val weaponBlurbs = mapOf(
-        "wpn_cleaver" to "One heavy, reliable hit.",
-        "wpn_fan_blades" to "Three hits sprayed across random enemies. Mob clearer.",
-        "wpn_piercer" to "Three hits, all on one target. Elite shredder.",
-        "wpn_ember_blade" to "A hit that sets the target burning. Sets up Detonator.",
-        "wpn_reaper" to "An execute: far harder against low-health targets.",
-        "wpn_leech" to "A hit that feeds half its damage back as healing."
+        "wpn_red_maul" to "One massive swing.",
+        "wpn_red_twin" to "Two heavy chops on one target.",
+        "wpn_red_guillotine" to "An execute: far harder below 35% health.",
+        "wpn_orange_brand" to "A hit that sets the target burning.",
+        "wpn_orange_whip" to "Two quick lashes that leave a burn.",
+        "wpn_orange_fan" to "Three sparks sprayed across random enemies.",
+        "wpn_yellow_siphon" to "A hit that feeds most of its damage back as healing.",
+        "wpn_yellow_lance" to "A clean, hard-hitting thrust.",
+        "wpn_yellow_bell" to "A ring that saps the target's strength.",
+        "wpn_green_fan" to "Three blades across random enemies.",
+        "wpn_green_volley" to "Four needles, anywhere they land.",
+        "wpn_green_scythe" to "A cleave that catches the target's neighbors.",
+        "wpn_blue_hammer" to "A slow, crushing blow.",
+        "wpn_blue_pike" to "Three rapid jabs on one target.",
+        "wpn_blue_undertow" to "Two pulling strikes.",
+        "wpn_violet_reaper" to "An execute: far harder below 30% health.",
+        "wpn_violet_fang" to "A vicious single bite.",
+        "wpn_violet_needle" to "A prick that leaves the target exposed.",
+        "wpn_silver_edge" to "Three flashing cuts on one target.",
+        "wpn_silver_lash" to "Three strikes scattered like weather.",
+        "wpn_silver_spike" to "A charged hit that saps strength."
     )
 
     private val offhandBlurbs = mapOf(
@@ -106,7 +130,8 @@ object GameText {
         "off_cleanser" to "Strip an ally's debuffs and add a small shield."
     )
 
-    fun name(id: String): String = names[id] ?: id
+    fun name(id: String): String =
+        names[id] ?: (if (id.startsWith("atk_")) names["wpn_" + id.removePrefix("atk_")] else null) ?: id
 
     fun weaponBlurb(id: String): String = weaponBlurbs[id] ?: ""
     fun offhandBlurb(id: String): String = offhandBlurbs[id] ?: ""
@@ -115,28 +140,29 @@ object GameText {
     //  Ability text with real numbers
     // ------------------------------------------------------------------
 
-    fun describeAbility(ability: Ability, attack: Int): List<String> {
-        val lines = ability.effects.map { describeEffect(it, attack) }
-        val cost = buildString {
-            append("Costs ${ability.cost} energy")
-            if (ability.cooldown > 0) append(", ${ability.cooldown} turn cooldown")
-        }
-        return lines + cost
+    const val ULT_NOTE = "Builds to 100% by dealing and taking damage"
+
+    fun describeAbility(ability: Ability, attack: Int, isUltimate: Boolean = false): List<String> {
+        val lines = ability.effects.map { describeEffect(it, attack) }.toMutableList()
+        if (ability.cooldown > 0) lines.add("Ready again after ${ability.cooldown} turns")
+        if (isUltimate) lines.add(ULT_NOTE)
+        return lines
     }
 
     private fun describeEffect(effect: Effect, attack: Int): String = when (effect) {
         is Effect.DealDamage -> {
             val dmg = (attack * effect.multiplier).roundToInt()
-            val base = if (effect.hits > 1) "Hits ${effect.hits} times for about $dmg damage each"
-            else "Hits for about $dmg damage"
-            if (effect.canCrit) "$base, can crit" else base
+            val crit = (dmg * Resolver.CRIT_MULTIPLIER).roundToInt()
+            val base = if (effect.hits > 1) "Hits ${effect.hits} times for $dmg damage each"
+            else "Hits for $dmg damage"
+            if (effect.canCrit) "$base ($crit on crit)" else base
         }
 
         is Effect.ExecuteDamage -> {
             val normal = (attack * effect.multiplier).roundToInt()
             val boosted = (attack * (effect.multiplier + effect.bonusMultiplier)).roundToInt()
             val pct = (effect.hpThreshold * 100).roundToInt()
-            "Hits for about $normal damage, or $boosted if the target is below $pct% health"
+            "Hits for $normal damage, or $boosted below $pct% health"
         }
 
         is Effect.Lifesteal -> {
@@ -175,18 +201,19 @@ object GameText {
     //  Info cards
     // ------------------------------------------------------------------
 
-    fun abilityInfo(ability: Ability, attack: Int): InfoContent = InfoContent(
+    fun abilityInfo(ability: Ability, attack: Int, isUltimate: Boolean = false): InfoContent = InfoContent(
         title = name(ability.id),
-        subtitle = "Ability",
-        lines = describeAbility(ability, attack)
+        subtitle = if (isUltimate) "Ultimate" else "Ability",
+        lines = describeAbility(ability, attack, isUltimate)
     )
 
     fun unitInfo(unit: CombatUnit): InfoContent {
         val lines = mutableListOf<String>()
 
         for (ability in unit.abilities) {
-            lines.add(name(ability.id).uppercase())
-            lines.addAll(describeAbility(ability, unit.baseAttack).map { "  $it" })
+            val isUlt = ability.id == unit.ultimateId
+            lines.add(name(ability.id).uppercase() + if (isUlt) " (ULTIMATE ${unit.ultCharge}%)" else "")
+            lines.addAll(describeAbility(ability, unit.baseAttack, isUlt).map { "  $it" })
         }
 
         if (unit.statuses.isNotEmpty()) {

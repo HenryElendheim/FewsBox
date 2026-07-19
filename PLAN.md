@@ -55,8 +55,11 @@ Not written yet. Known fixed points:
   first playable grayscale hero (Tempest ultimate, own gear pools). Next
   bosses follow the same pattern. Gray remains unbuilt and unbeatable by
   design
-- **Ultimate balance pass** - all six ultimates shipped (Berserk, Inferno,
-  Sunburst, Razor Storm, Phalanx, Terror); numbers need playtesting
+- **Ultimate balance pass** - ultimates are meter-based now (fill by
+  dealing damage at 2%/point and taking damage at 3%/point, fire at 100%,
+  reset to zero); the gain rates and all seven ults need playtesting
+- **Weapon balance pass** - every hero has three signature weapons of
+  their own now, 21 total; numbers are first drafts
 - **Sound** - hooks exist via the combat event stream, nothing wired yet
 - **Real art** - swap the color blocks and glyph chips for actual
   characters. Everything renders off iconId lookups, so art lands without

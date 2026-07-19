@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -115,7 +114,7 @@ fun StatusRow(statuses: List<ActiveStatus>, modifier: Modifier = Modifier) {
 /** The elite telegraph: a ring that fills as the big attack winds up and
  *  pulses once it's ready — the next turn is going to hurt. */
 @Composable
-fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier) {
+fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier, color: Color = Accent) {
     val animated by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(durationMillis = 500),
@@ -128,9 +127,9 @@ fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier) {
             animationSpec = infiniteRepeatable(tween(durationMillis = 450), RepeatMode.Reverse),
             label = "chargePulseAlpha"
         )
-        Accent.copy(alpha = pulse)
+        color.copy(alpha = pulse)
     } else {
-        Accent.copy(alpha = 0.75f)
+        color.copy(alpha = 0.75f)
     }
     Canvas(modifier = modifier) {
         val stroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
@@ -189,6 +188,16 @@ fun UnitCard(
                     progress = it.progress,
                     ready = it.isReady,
                     modifier = Modifier.size(64.dp)
+                )
+            }
+            // Heroes wear their ultimate meter the way elites wear their
+            // telegraph: a ring, gold, pulsing when the big one is ready.
+            if (unit.ultimateId != null) {
+                ChargeRing(
+                    progress = unit.ultCharge / 100f,
+                    ready = unit.ultReady,
+                    modifier = Modifier.size(64.dp),
+                    color = EnergyGold
                 )
             }
             val heroColor = GameIcons.heroColor(unit.iconId)
@@ -269,6 +278,7 @@ fun AbilityButton(
     selected: Boolean,
     enabled: Boolean,
     cooldownLeft: Int,
+    ultPercent: Int? = null,   // non-null marks the ultimate; <100 shows the meter
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
@@ -310,33 +320,22 @@ fun AbilityButton(
                     Text("$cooldownLeft", color = TextMuted, fontSize = 18.sp, fontWeight = FontWeight.Black)
                 }
             }
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.padding(top = 3.dp)
-        ) {
-            repeat(ability.cost) {
+            if (ultPercent != null && ultPercent < 100) {
                 Box(
                     Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(EnergyGold)
-                )
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(Color(0xAA14141A)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "$ultPercent%",
+                        color = EnergyGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
-        }
-    }
-}
-
-@Composable
-fun EnergyPips(current: Int, max: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        repeat(max) { index ->
-            Box(
-                Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(if (index < current) EnergyGold else PanelRaised)
-            )
         }
     }
 }

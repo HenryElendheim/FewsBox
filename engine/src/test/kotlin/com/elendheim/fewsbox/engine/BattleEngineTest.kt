@@ -37,36 +37,49 @@ class BattleEngineTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `energy is spent on use and regenerates capped at round start`() {
+    fun `ultimate meter fills from dealing and taking damage then gates and resets`() {
         val rec = Recorder()
-        val player = unit("p", Team.PLAYER, abilities = listOf(plainHit(1.0f).copy(cost = 4)))
-        val enemy = unit("e", Team.ENEMY, hp = 500)
-        val state = battle(player, enemy, energy = 10)
-        val eng = engine(rec)
-        eng.startBattle(state)
-
-        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
-        assertEquals(6, state.resources.energy)
-
-        eng.finishRound(state)
-        // 6 + 3 regen = 9, cap is 10
-        assertEquals(9, state.resources.energy)
-        eng.finishRound(state)
-        assertEquals(10, state.resources.energy) // capped
-    }
-
-    @Test
-    fun `action is refused without energy or off cooldown or out of phase`() {
-        val rec = Recorder()
-        val pricey = plainHit(1.0f).copy(cost = 99)
-        val onCd = plainHit(2.0f).copy(cooldown = 2)
-        val player = unit("p", Team.PLAYER, abilities = listOf(pricey, onCd))
-        val enemy = unit("e", Team.ENEMY, hp = 500)
+        val ult = Ability(
+            id = "big_one", iconId = "x", targeting = Targeting.SINGLE_ENEMY,
+            effects = listOf(Effect.DealDamage(multiplier = 2.0f, canCrit = false))
+        )
+        val player = unit(
+            "p", Team.PLAYER, hp = 200, attack = 10,
+            abilities = listOf(plainHit(1.0f), ult), ultimateId = "big_one"
+        )
+        val enemy = unit("e", Team.ENEMY, hp = 500, attack = 10,
+            abilities = listOf(slash()), aiProfile = slashProfile())
         val state = battle(player, enemy)
         val eng = engine(rec)
         eng.startBattle(state)
 
-        assertFalse(eng.playerAction(state, "p", pricey.id, listOf("e")))
+        // Meter empty: the ultimate is refused.
+        assertFalse(eng.playerAction(state, "p", "big_one", listOf("e")))
+
+        // Deal 10 (+20%), take 10 (+30%) per round -> 50, then 100.
+        eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
+        eng.finishRound(state)
+        assertEquals(50, player.ultCharge)
+
+        eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
+        eng.finishRound(state)
+        assertEquals(100, player.ultCharge)
+
+        // Full meter: fires, then resets to zero.
+        assertTrue(eng.playerAction(state, "p", "big_one", listOf("e")))
+        assertEquals(0, player.ultCharge)
+        assertTrue(rec.all<CombatEvent.UltChargeChanged>().isNotEmpty())
+    }
+
+    @Test
+    fun `action is refused on cooldown or when already acted`() {
+        val rec = Recorder()
+        val onCd = plainHit(2.0f).copy(cooldown = 2)
+        val player = unit("p", Team.PLAYER, abilities = listOf(onCd))
+        val enemy = unit("e", Team.ENEMY, hp = 500)
+        val state = battle(player, enemy)
+        val eng = engine(rec)
+        eng.startBattle(state)
 
         assertTrue(eng.playerAction(state, "p", onCd.id, listOf("e")))
         // Already acted this round
@@ -282,13 +295,13 @@ class BattleEngineTest {
             while (state.phase != TurnPhase.BATTLE_OVER && rounds < 200) {
                 for (p in state.pendingPlayers) {
                     val target = state.enemies.firstOrNull() ?: break
-                    val affordable = p.abilities.firstOrNull {
-                        state.resources.energy >= it.cost && p.cooldownLeft(it.id) == 0
+                    val usable = p.abilities.firstOrNull {
+                        p.cooldownLeft(it.id) == 0 && (it.id != p.ultimateId || p.ultReady)
                     }
-                    if (affordable != null) {
-                        eng.playerAction(state, p.id, affordable.id, listOf(target.id))
+                    if (usable != null) {
+                        eng.playerAction(state, p.id, usable.id, listOf(target.id))
                     } else {
-                        state.actedThisRound.add(p.id) // nothing affordable: pass
+                        state.actedThisRound.add(p.id) // nothing usable: pass
                     }
                     if (state.phase == TurnPhase.BATTLE_OVER) break
                 }

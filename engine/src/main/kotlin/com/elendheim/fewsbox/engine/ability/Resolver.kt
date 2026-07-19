@@ -26,6 +26,10 @@ class Resolver(
         const val TAUNT_STATUS_ID = "taunt"
         const val CRIT_CHANCE = 0.10f
         const val CRIT_MULTIPLIER = 1.5f
+
+        // Ultimate meter: percent gained per point of damage dealt / taken.
+        const val ULT_PER_DAMAGE_DEALT = 2
+        const val ULT_PER_DAMAGE_TAKEN = 3
     }
 
     /** Running totals for one ability use; lifesteal reads damageDealt. */
@@ -210,6 +214,10 @@ class Resolver(
         emit(CombatEvent.DamageDealt(target.id, amount, isCrit))
         if (!target.isAlive) emit(CombatEvent.UnitDied(target.id))
 
+        // Ultimate meters fill on both sides of a hit.
+        gainUltCharge(actor, amount * ULT_PER_DAMAGE_DEALT)
+        gainUltCharge(target, amount * ULT_PER_DAMAGE_TAKEN)
+
         // Thorns: the target strikes back a flat amount per hit taken. The
         // reflection never re-reflects and doesn't feed lifesteal.
         val reflect = target.statuses.sumOf { status ->
@@ -219,8 +227,17 @@ class Resolver(
         if (reflect > 0 && actor.isAlive) {
             applyDamage(actor, reflect)
             emit(CombatEvent.DamageDealt(actor.id, reflect, false))
+            gainUltCharge(actor, reflect * ULT_PER_DAMAGE_TAKEN)
             if (!actor.isAlive) emit(CombatEvent.UnitDied(actor.id))
         }
+    }
+
+    /** Fill a unit's ultimate meter, capped at 100. No-op for units without one. */
+    fun gainUltCharge(unit: CombatUnit, amount: Int) {
+        if (unit.ultimateId == null || amount <= 0 || !unit.isAlive) return
+        val before = unit.ultCharge
+        unit.ultCharge = (unit.ultCharge + amount).coerceAtMost(100)
+        if (unit.ultCharge != before) emit(CombatEvent.UltChargeChanged(unit.id, unit.ultCharge))
     }
 
     private fun passiveFactor(unit: CombatUnit, passive: PassiveEffect, reduces: Boolean): Float {

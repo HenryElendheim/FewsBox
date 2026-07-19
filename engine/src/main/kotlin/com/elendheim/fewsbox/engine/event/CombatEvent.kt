@@ -20,7 +20,7 @@ sealed class CombatEvent {
     data class TurnSkipped(val unitId: String) : CombatEvent()
     data class UnitDied(val unitId: String) : CombatEvent()
     data class RoundStarted(val round: Int) : CombatEvent()
-    data class EnergyChanged(val current: Int, val max: Int) : CombatEvent()
+    data class UltChargeChanged(val unitId: String, val percent: Int) : CombatEvent()
     data object BattleWon : CombatEvent()
     data object BattleLost : CombatEvent()
 }
