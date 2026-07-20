@@ -45,22 +45,26 @@ class BattleEngine(
     fun playerAction(state: BattleState, actorId: String, abilityId: String, targetIds: List<String>): Boolean {
         if (state.phase != TurnPhase.PLAYER_INPUT) return false
         val actor = state.unitOrNull(actorId) ?: return false
-        if (!actor.isAlive || actor.team != Team.PLAYER || actor.id in state.actedThisRound) return false
+        if (!actor.isAlive || actor.team != Team.PLAYER) return false
         val ability = actor.abilities.firstOrNull { it.id == abilityId } ?: return false
         if (actor.cooldownLeft(ability.id) > 0) return false
 
+        // Ultimates ride the party meter and are a bonus action: they ignore
+        // whether the hero already acted and don't spend the hero's turn.
         val isUltimate = ability.id == actor.ultimateId
-        if (isUltimate && !actor.ultReady) return false
+        if (isUltimate && !state.partyUltReady) return false
+        if (!isUltimate && actor.id in state.actedThisRound) return false
 
         if (ability.cooldown > 0) actor.cooldowns[ability.id] = ability.cooldown
 
         state.phase = TurnPhase.RESOLVING
         resolver.resolve(state, actor, ability, targetIds)
         if (isUltimate) {
-            actor.ultCharge = 0
-            emit(CombatEvent.UltChargeChanged(actor.id, 0))
+            state.partyUltCharge = 0
+            emit(CombatEvent.UltChargeChanged(0))
+        } else {
+            state.actedThisRound.add(actor.id)
         }
-        state.actedThisRound.add(actor.id)
         if (!checkBattleEnd(state)) state.phase = TurnPhase.PLAYER_INPUT
         return true
     }
@@ -205,7 +209,9 @@ class BattleEngine(
                     return
                 }
                 // Suffering builds the meter too.
-                resolver.gainUltCharge(unit, amount * Resolver.ULT_PER_DAMAGE_TAKEN)
+                if (unit.team == Team.PLAYER) {
+                    resolver.gainPartyUlt(state, amount * Resolver.ULT_PER_DAMAGE_TAKEN)
+                }
             } else {
                 resolver.healUnit(unit, amount)
                 emit(CombatEvent.StatusTicked(unit.id, def.id, amount))

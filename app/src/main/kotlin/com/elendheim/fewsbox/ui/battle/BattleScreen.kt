@@ -129,9 +129,10 @@ fun BattleScreen(
         }
     }
 
-    // Keep the active actor pointing at a unit that can still act.
+    // Any living hero can be the active actor: heroes who already acted can
+    // still spend the party's ultimate.
     val pending = battle.pendingPlayers
-    val activeActor = pending.firstOrNull { it.id == activeActorId } ?: pending.firstOrNull()
+    val activeActor = battle.players.firstOrNull { it.id == activeActorId } ?: pending.firstOrNull()
     if (activeActor?.id != activeActorId) {
         activeActorId = activeActor?.id
         selectedAbilityId = null
@@ -199,7 +200,7 @@ fun BattleScreen(
                         onClick = {
                             when {
                                 allyTargetable -> useAbilityOn(player.id)
-                                player.id in battle.actedThisRound || !player.isAlive -> {}
+                                !player.isAlive -> {}
                                 else -> {
                                     activeActorId = player.id
                                     selectedAbilityId = null
@@ -218,16 +219,16 @@ fun BattleScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (activeActor != null) {
+                    val actorActed = activeActor.id in battle.actedThisRound
                     for (ability in activeActor.abilities) {
                         val isUltimate = ability.id == activeActor.ultimateId
-                        val ready = activeActor.cooldownLeft(ability.id) == 0 &&
-                            (!isUltimate || activeActor.ultReady)
+                        val usable = activeActor.cooldownLeft(ability.id) == 0 &&
+                            if (isUltimate) battle.partyUltReady else !actorActed
                         AbilityButton(
                             ability = ability,
                             selected = ability.id == selectedAbilityId,
-                            enabled = !inputLocked && ready,
+                            enabled = !inputLocked && usable,
                             cooldownLeft = activeActor.cooldownLeft(ability.id),
-                            ultPercent = if (isUltimate) activeActor.ultCharge else null,
                             onLongClick = { info = GameText.abilityInfo(ability, activeActor.baseAttack, isUltimate) },
                             onClick = {
                                 if (ability.targeting.needsChosenTarget()) {
@@ -241,21 +242,14 @@ fun BattleScreen(
                             }
                         )
                     }
-                    // Hold: this hero sits the round out and saves energy.
-                    Text(
-                        text = "HOLD",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(enabled = !inputLocked) { vm.passUnit(activeActor.id) }
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
-                    )
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+            UltMeterBar(
+                percent = battle.partyUltCharge,
+                modifier = Modifier.fillMaxWidth(0.72f)
+            )
             Spacer(Modifier.height(10.dp))
         }
 

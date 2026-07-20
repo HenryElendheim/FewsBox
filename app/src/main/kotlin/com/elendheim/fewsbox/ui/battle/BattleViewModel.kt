@@ -66,15 +66,6 @@ class BattleViewModel : ViewModel() {
         maybeRunEnemyTurn()
     }
 
-    /** Skip a unit's action (nothing affordable, or the player chooses to hold). */
-    fun passUnit(actorId: String) {
-        val s = state ?: return
-        if (s.phase != TurnPhase.PLAYER_INPUT) return
-        if (s.pendingPlayers.none { it.id == actorId }) return
-        s.actedThisRound.add(actorId)
-        push()
-        maybeRunEnemyTurn()
-    }
 
     private fun maybeRunEnemyTurn() {
         val s = state ?: return

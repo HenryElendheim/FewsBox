@@ -4,6 +4,7 @@ import com.elendheim.fewsbox.engine.event.CombatEvent
 import com.elendheim.fewsbox.engine.model.ActiveStatus
 import com.elendheim.fewsbox.engine.model.BattleState
 import com.elendheim.fewsbox.engine.model.CombatUnit
+import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.status.PassiveEffect
 import com.elendheim.fewsbox.engine.status.StatusDef
 import com.elendheim.fewsbox.engine.status.StatusKind
@@ -48,7 +49,7 @@ class Resolver(
                 repeat(effect.hits) {
                     val pool = opposing(state, actor)
                     if (pool.isEmpty()) return@repeat
-                    dealDamageHit(actor, pool.random(rng), effect.multiplier, effect.canCrit, ctx)
+                    dealDamageHit(state, actor, pool.random(rng), effect.multiplier, effect.canCrit, ctx)
                 }
             } else {
                 for (target in targets) {
@@ -118,7 +119,7 @@ class Resolver(
     ) {
         when (effect) {
             is Effect.DealDamage -> repeat(effect.hits) {
-                if (target.isAlive) dealDamageHit(actor, target, effect.multiplier, effect.canCrit, ctx)
+                if (target.isAlive) dealDamageHit(state, actor, target, effect.multiplier, effect.canCrit, ctx)
             }
 
             is Effect.ExecuteDamage -> {
@@ -126,7 +127,7 @@ class Resolver(
                 val belowThreshold = target.hp.toFloat() / target.maxHp < effect.hpThreshold
                 val multiplier =
                     if (belowThreshold) effect.multiplier + effect.bonusMultiplier else effect.multiplier
-                dealDamageHit(actor, target, multiplier, canCrit = true, ctx)
+                dealDamageHit(state, actor, target, multiplier, canCrit = true, ctx)
             }
 
             is Effect.Lifesteal -> {
@@ -191,6 +192,7 @@ class Resolver(
     // ------------------------------------------------------------------
 
     private fun dealDamageHit(
+        state: BattleState,
         actor: CombatUnit,
         target: CombatUnit,
         multiplier: Float,
@@ -214,9 +216,9 @@ class Resolver(
         emit(CombatEvent.DamageDealt(target.id, amount, isCrit))
         if (!target.isAlive) emit(CombatEvent.UnitDied(target.id))
 
-        // Ultimate meters fill on both sides of a hit.
-        gainUltCharge(actor, amount * ULT_PER_DAMAGE_DEALT)
-        gainUltCharge(target, amount * ULT_PER_DAMAGE_TAKEN)
+        // The party's shared meter fills whenever heroes deal or take damage.
+        if (actor.team == Team.PLAYER) gainPartyUlt(state, amount * ULT_PER_DAMAGE_DEALT)
+        if (target.team == Team.PLAYER) gainPartyUlt(state, amount * ULT_PER_DAMAGE_TAKEN)
 
         // Thorns: the target strikes back a flat amount per hit taken. The
         // reflection never re-reflects and doesn't feed lifesteal.
@@ -227,17 +229,18 @@ class Resolver(
         if (reflect > 0 && actor.isAlive) {
             applyDamage(actor, reflect)
             emit(CombatEvent.DamageDealt(actor.id, reflect, false))
-            gainUltCharge(actor, reflect * ULT_PER_DAMAGE_TAKEN)
+            if (target.team == Team.PLAYER) gainPartyUlt(state, reflect * ULT_PER_DAMAGE_DEALT)
+            if (actor.team == Team.PLAYER) gainPartyUlt(state, reflect * ULT_PER_DAMAGE_TAKEN)
             if (!actor.isAlive) emit(CombatEvent.UnitDied(actor.id))
         }
     }
 
-    /** Fill a unit's ultimate meter, capped at 100. No-op for units without one. */
-    fun gainUltCharge(unit: CombatUnit, amount: Int) {
-        if (unit.ultimateId == null || amount <= 0 || !unit.isAlive) return
-        val before = unit.ultCharge
-        unit.ultCharge = (unit.ultCharge + amount).coerceAtMost(100)
-        if (unit.ultCharge != before) emit(CombatEvent.UltChargeChanged(unit.id, unit.ultCharge))
+    /** Fill the party's shared ultimate meter, capped at 100. */
+    fun gainPartyUlt(state: BattleState, amount: Int) {
+        if (amount <= 0) return
+        val before = state.partyUltCharge
+        state.partyUltCharge = (state.partyUltCharge + amount).coerceAtMost(100)
+        if (state.partyUltCharge != before) emit(CombatEvent.UltChargeChanged(state.partyUltCharge))
     }
 
     private fun passiveFactor(unit: CombatUnit, passive: PassiveEffect, reduces: Boolean): Float {

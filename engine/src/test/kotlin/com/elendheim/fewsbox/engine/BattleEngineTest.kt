@@ -37,7 +37,7 @@ class BattleEngineTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `ultimate meter fills from dealing and taking damage then gates and resets`() {
+    fun `party ultimate meter fills, gates, and is a bonus action for acted heroes`() {
         val rec = Recorder()
         val ult = Ability(
             id = "big_one", iconId = "x", targeting = Targeting.SINGLE_ENEMY,
@@ -59,15 +59,18 @@ class BattleEngineTest {
         // Deal 10 (+20%), take 10 (+30%) per round -> 50, then 100.
         eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
         eng.finishRound(state)
-        assertEquals(50, player.ultCharge)
+        assertEquals(50, state.partyUltCharge)
 
         eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
         eng.finishRound(state)
-        assertEquals(100, player.ultCharge)
+        assertEquals(100, state.partyUltCharge)
 
-        // Full meter: fires, then resets to zero.
+        // Round three: attack first (turn spent), then the ultimate still
+        // fires - it rides the party meter, not the hero's turn.
+        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+        assertFalse(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
         assertTrue(eng.playerAction(state, "p", "big_one", listOf("e")))
-        assertEquals(0, player.ultCharge)
+        assertEquals(0, state.partyUltCharge)
         assertTrue(rec.all<CombatEvent.UltChargeChanged>().isNotEmpty())
     }
 
@@ -296,7 +299,7 @@ class BattleEngineTest {
                 for (p in state.pendingPlayers) {
                     val target = state.enemies.firstOrNull() ?: break
                     val usable = p.abilities.firstOrNull {
-                        p.cooldownLeft(it.id) == 0 && (it.id != p.ultimateId || p.ultReady)
+                        p.cooldownLeft(it.id) == 0 && (it.id != p.ultimateId || state.partyUltReady)
                     }
                     if (usable != null) {
                         eng.playerAction(state, p.id, usable.id, listOf(target.id))

@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -182,16 +184,6 @@ fun UnitCard(
                     modifier = Modifier.size(64.dp)
                 )
             }
-            // Heroes wear their ultimate meter the way elites wear their
-            // telegraph: a ring, gold, pulsing when the big one is ready.
-            if (unit.ultimateId != null) {
-                ChargeRing(
-                    progress = unit.ultCharge / 100f,
-                    ready = unit.ultReady,
-                    modifier = Modifier.size(64.dp),
-                    color = EnergyGold
-                )
-            }
             val heroColor = GameIcons.heroColor(unit.iconId)
             Box(
                 modifier = Modifier
@@ -223,7 +215,12 @@ fun UnitCard(
                     Text("${unit.shield}", color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
                 }
             }
-            FloatingNumbers(floaties)
+            Box(
+                Modifier.requiredSize(64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                FloatingNumbers(floaties)
+            }
         }
         HpBar(unit.hp, unit.maxHp, Modifier.width(60.dp).padding(top = 4.dp))
         StatusRow(unit.statuses, Modifier.padding(top = 3.dp))
@@ -232,7 +229,10 @@ fun UnitCard(
 
 @Composable
 private fun FloatingNumbers(floaties: List<Floaty>) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.wrapContentSize(unbounded = true)
+    ) {
         for (floaty in floaties) {
             val progress by animateFloatAsState(
                 targetValue = 1f,
@@ -264,7 +264,6 @@ fun AbilityButton(
     selected: Boolean,
     enabled: Boolean,
     cooldownLeft: Int,
-    ultPercent: Int? = null,   // non-null marks the ultimate; <100 shows the meter
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
@@ -306,22 +305,43 @@ fun AbilityButton(
                     Text("$cooldownLeft", color = TextMuted, fontSize = 18.sp, fontWeight = FontWeight.Black)
                 }
             }
-            if (ultPercent != null && ultPercent < 100) {
-                Box(
-                    Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(Color(0xAA14141A)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "$ultPercent%",
-                        color = EnergyGold,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
         }
+    }
+}
+
+/** The party's shared ultimate meter: one gold bar, filled by everyone's
+ *  damage dealt and taken. Full means someone gets to go big. */
+@Composable
+fun UltMeterBar(percent: Int, modifier: Modifier = Modifier) {
+    val fraction by animateFloatAsState(
+        targetValue = percent / 100f,
+        animationSpec = tween(durationMillis = 400),
+        label = "partyUlt"
+    )
+    val full = percent >= 100
+    val barColor = if (full) {
+        val pulse by rememberInfiniteTransition(label = "ultPulse").animateFloat(
+            initialValue = 0.55f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(durationMillis = 450), RepeatMode.Reverse),
+            label = "ultPulseAlpha"
+        )
+        EnergyGold.copy(alpha = pulse)
+    } else {
+        EnergyGold
+    }
+    Box(
+        modifier = modifier
+            .height(10.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(PanelRaised)
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .height(10.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(barColor)
+        )
     }
 }

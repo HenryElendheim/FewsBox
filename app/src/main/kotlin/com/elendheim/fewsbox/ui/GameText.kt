@@ -150,7 +150,7 @@ object GameText {
     //  Ability text with real numbers
     // ------------------------------------------------------------------
 
-    const val ULT_NOTE = "Builds to 100% by dealing and taking damage"
+    const val ULT_NOTE = "Spends the shared party meter and does not use up the hero's turn"
 
     fun describeAbility(ability: Ability, attack: Int, isUltimate: Boolean = false): List<String> {
         val lines = ability.effects.map { describeEffect(it, attack) }.toMutableList()
@@ -222,7 +222,7 @@ object GameText {
 
         for (ability in unit.abilities) {
             val isUlt = ability.id == unit.ultimateId
-            lines.add(name(ability.id).uppercase() + if (isUlt) " (ULTIMATE ${unit.ultCharge}%)" else "")
+            lines.add(name(ability.id).uppercase() + if (isUlt) " (ULTIMATE)" else "")
             lines.addAll(describeAbility(ability, unit.baseAttack, isUlt).map { "  $it" })
         }
 

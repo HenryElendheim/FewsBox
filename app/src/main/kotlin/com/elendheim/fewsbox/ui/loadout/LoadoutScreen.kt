@@ -127,7 +127,10 @@ fun LoadoutScreen(
                 letterSpacing = 2.sp
             )
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 for (member in roster) {
                     val inParty = member.hero.id in selectedIds
                     Box(
