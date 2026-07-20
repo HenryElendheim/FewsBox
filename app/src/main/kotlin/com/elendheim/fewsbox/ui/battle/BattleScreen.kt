@@ -306,11 +306,15 @@ fun BattleScreen(
 }
 
 private fun Targeting.targetsEnemy(): Boolean = when (this) {
-    Targeting.SINGLE_ENEMY, Targeting.ADJACENT_ENEMIES -> true
+    Targeting.SINGLE_ENEMY, Targeting.ADJACENT_ENEMIES,
+    Targeting.ALL_ENEMIES, Targeting.RANDOM_ENEMY, Targeting.RANDOM_ENEMIES_MULTI -> true
     else -> false
 }
 
+// Every attack is aimed by hand: even sprays and full-line hits wait for a
+// tap on an enemy. Only self/party abilities fire straight from the button.
 private fun Targeting.needsChosenTarget(): Boolean = when (this) {
-    Targeting.SINGLE_ENEMY, Targeting.SINGLE_ALLY, Targeting.ADJACENT_ENEMIES -> true
+    Targeting.SINGLE_ENEMY, Targeting.SINGLE_ALLY, Targeting.ADJACENT_ENEMIES,
+    Targeting.ALL_ENEMIES, Targeting.RANDOM_ENEMY, Targeting.RANDOM_ENEMIES_MULTI -> true
     else -> false
 }

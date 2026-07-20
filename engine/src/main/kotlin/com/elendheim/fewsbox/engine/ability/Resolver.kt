@@ -44,12 +44,15 @@ class Resolver(
         val spread = ability.targeting == Targeting.RANDOM_ENEMIES_MULTI
         for (effect in ability.effects) {
             if (spread && effect is Effect.DealDamage) {
-                // Each hit picks its own random living target so multi-hit
-                // weapons hose down a whole group.
-                repeat(effect.hits) {
+                // The first hit lands where the player aimed; the rest pick
+                // their own random living targets and hose down the group.
+                repeat(effect.hits) { hitIndex ->
                     val pool = opposing(state, actor)
                     if (pool.isEmpty()) return@repeat
-                    dealDamageHit(state, actor, pool.random(rng), effect.multiplier, effect.canCrit, ctx)
+                    val aimed = chosenTargetIds.firstOrNull()
+                        ?.let { id -> pool.firstOrNull { it.id == id } }
+                    val target = if (hitIndex == 0 && aimed != null) aimed else pool.random(rng)
+                    dealDamageHit(state, actor, target, effect.multiplier, effect.canCrit, ctx)
                 }
             } else {
                 for (target in targets) {
