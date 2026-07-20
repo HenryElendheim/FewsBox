@@ -300,23 +300,11 @@ fun BattleScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "$levelLabel$stageLabel - ROUND ${battle.round}",
+                text = "$levelLabel$stageLabel",
                 color = TextMuted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
-            )
-            Text(
-                text = when {
-                    snapshot.enemyTurnRunning -> "ENEMY TURN"
-                    selectedHero != null -> "${selectedHero.name.uppercase()}: TAP AN ENEMY TO ATTACK, AN ALLY TO ASSIST"
-                    else -> "TAP A HERO TO COMMAND - ${battle.pendingPlayers.size} TO ACT"
-                },
-                color = TextMuted,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(top = 4.dp)
             )
 
             Spacer(Modifier.height(20.dp))
@@ -349,6 +337,9 @@ fun BattleScreen(
                         isActiveActor = player.id == selectedHero?.id,
                         isActing = player.id == actingUnitId,
                         flash = flashes[player.id],
+                        turnsLeft = if (player.isAlive && battle.phase == TurnPhase.PLAYER_INPUT &&
+                            !snapshot.enemyTurnRunning
+                        ) battle.actionsLeft(player).coerceAtLeast(0) else 0,
                         floaties = floaties[player.id] ?: emptyList(),
                         onClick = { tapHero(player) },
                         onLongClick = { info = GameText.unitInfo(player) },

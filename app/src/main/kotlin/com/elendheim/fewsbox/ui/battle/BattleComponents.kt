@@ -167,6 +167,7 @@ fun UnitCard(
     isActiveActor: Boolean,
     isActing: Boolean = false,   // this unit's move is playing out right now
     flash: UnitFlash? = null,    // latest hit/heal/shield reaction to play
+    turnsLeft: Int = 0,          // heroes with turns left get an underline
     floaties: List<Floaty>,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
@@ -320,6 +321,25 @@ fun UnitCard(
             unit.statuses.filterNot { it.defId == Resolver.TAUNT_STATUS_ID },
             Modifier.padding(top = 3.dp)
         )
+        // The whole turn display: an underline while this hero can still
+        // act, with the number of turns they have banked under it.
+        if (turnsLeft > 0) {
+            Box(
+                Modifier
+                    .padding(top = 3.dp)
+                    .width(40.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(EnergyGold)
+            )
+            Text(
+                "$turnsLeft",
+                color = EnergyGold,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.padding(top = 1.dp)
+            )
+        }
     }
 }
 
