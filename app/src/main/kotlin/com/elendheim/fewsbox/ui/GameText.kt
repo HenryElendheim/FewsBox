@@ -75,6 +75,7 @@ object GameText {
         "cinder_spit" to "Cinder Spit",
         "ember_guard" to "Ember Guard",
         "silver_storm" to "Silver Storm",
+        "null_wave" to "Null Wave",
         // Ultimates
         "ult_red" to "Berserk",
         "ult_orange" to "Inferno",
@@ -152,7 +153,8 @@ object GameText {
     //  Ability text with real numbers
     // ------------------------------------------------------------------
 
-    const val ULT_NOTE = "Spends the shared party meter and does not use up the hero's turn"
+    const val ULT_NOTE = "Fired by dragging the full party meter onto the hero; it does not use up their turn. " +
+        "The meter gains 5% per attack, 3% per hit taken, and 15% when one hit costs over half a hero's max HP"
 
     fun describeAbility(ability: Ability, attack: Int, isUltimate: Boolean = false): List<String> {
         val lines = ability.effects.map { describeEffect(it, attack) }.toMutableList()
@@ -234,11 +236,6 @@ object GameText {
             lines.addAll(describeAbility(ability, unit.baseAttack, isUlt).map { "  $it" })
         }
 
-        if (unit.statuses.isNotEmpty()) {
-            lines.add("ACTIVE EFFECTS")
-            for (status in unit.statuses) lines.add("  " + statusLine(status))
-        }
-
         unit.charge?.let { charge ->
             val left = charge.turnsRequired - charge.turnsElapsed
             lines.add("CHARGING: ${name(charge.chargingAbilityId).uppercase()}")
@@ -246,6 +243,13 @@ object GameText {
                 if (charge.isReady) "  Fires on its next turn"
                 else "  Fires in $left more turn" + (if (left > 1) "s" else "") + " unless stunned"
             )
+        }
+
+        // Always the last section, so what's affecting this unit right now
+        // never gets buried between its moves.
+        if (unit.statuses.isNotEmpty()) {
+            lines.add("AFFECTING ${unit.name.uppercase()} RIGHT NOW")
+            for (status in unit.statuses) lines.add("  " + statusLine(status))
         }
 
         val shieldNote = if (unit.shield > 0) " · Shield ${unit.shield}" else ""

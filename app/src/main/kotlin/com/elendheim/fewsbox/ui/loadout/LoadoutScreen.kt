@@ -24,6 +24,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +79,10 @@ fun LoadoutScreen(
     onSelectLevel: (Int) -> Unit,
     onToggleHero: (String) -> Unit,
     onLoadoutChange: (Loadout) -> Unit,
-    onFight: () -> Unit
+    onFight: () -> Unit,
+    endlessBest: Int = 0,
+    endlessUnlocked: Boolean = false,
+    onPlayEndless: () -> Unit = {}
 ) {
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
@@ -109,13 +114,34 @@ fun LoadoutScreen(
 
             Spacer(Modifier.height(14.dp))
 
-            // The level grid: 25 levels, five per row. Tap to pick.
+            // The level grid: 100 levels, five per row, in its own scroll
+            // window that opens on wherever you're up to.
             LevelGrid(
                 maxUnlocked = maxUnlocked,
                 selectedLevel = selectedLevel,
                 bestStars = bestStars,
                 onSelectLevel = onSelectLevel
             )
+
+            if (endlessUnlocked) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onPlayEndless,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PanelRaised,
+                        contentColor = EnergyGold
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(46.dp)
+                ) {
+                    Text(
+                        if (endlessBest > 0) "ENDLESS - LEVEL ${endlessBest + 1} - BEST $endlessBest"
+                        else "ENDLESS - THE CAMPAIGN IS BEATEN",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        letterSpacing = 2.sp
+                    )
+                }
+            }
 
             Spacer(Modifier.height(18.dp))
 
@@ -222,13 +248,56 @@ private fun LevelGrid(
     bestStars: Map<Int, Int>,
     onSelectLevel: (Int) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (row in (0 until Battles.count).chunked(5)) {
+    // The board shows 25 levels at a time; swipe sideways for the next
+    // page. It opens on whichever page holds the level you're up to.
+    val pageCount = (Battles.count + 24) / 25
+    val pager = rememberPagerState(
+        initialPage = (selectedLevel / 25).coerceIn(0, pageCount - 1)
+    ) { pageCount }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        HorizontalPager(state = pager) { page ->
+            LevelPage(
+                levels = (page * 25 until minOf((page + 1) * 25, Battles.count)).toList(),
+                maxUnlocked = maxUnlocked,
+                selectedLevel = selectedLevel,
+                bestStars = bestStars,
+                onSelectLevel = onSelectLevel
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(pageCount) { i ->
+                Box(
+                    Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(if (i == pager.currentPage) Accent else PanelRaised)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LevelPage(
+    levels: List<Int>,
+    maxUnlocked: Int,
+    selectedLevel: Int,
+    bestStars: Map<Int, Int>,
+    onSelectLevel: (Int) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        for (row in levels.chunked(5)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (level in row) {
                     val unlocked = level <= maxUnlocked
                     val selected = level == selectedLevel
-                    val isBoss = Battles.unlocks.containsKey(level)
+                    val isBoss = Battles.isBossLevel(level)
                     val stars = bestStars[level] ?: 0
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,

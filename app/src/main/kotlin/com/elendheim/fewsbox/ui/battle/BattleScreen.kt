@@ -2,8 +2,11 @@ package com.elendheim.fewsbox.ui.battle
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,12 +15,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,21 +33,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.elendheim.fewsbox.data.Battles
 import com.elendheim.fewsbox.data.Statuses
+import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Targeting
 import com.elendheim.fewsbox.engine.event.CombatEvent
+import com.elendheim.fewsbox.engine.model.CombatUnit
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.model.TurnPhase
-import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.InfoContent
 import com.elendheim.fewsbox.ui.InfoOverlay
+import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.DangerRed
 import com.elendheim.fewsbox.ui.theme.EnergyGold
@@ -54,28 +68,46 @@ import com.elendheim.fewsbox.ui.theme.TextBright
 import com.elendheim.fewsbox.ui.theme.TextMuted
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
+/**
+ * The battle. Controls are all direct: tap one of your heroes, then tap an
+ * enemy to swing the weapon at them or tap an ally to use the offhand on
+ * them. The ability chips under the line arm a specific ability (Detonator
+ * on an enemy, a shield on yourself) and long-press anything for exact
+ * numbers. The full ult bar is dragged onto a hero to fire their ultimate.
+ */
 @Composable
 fun BattleScreen(
     vm: BattleViewModel,
-    onVictory: (survivors: Int) -> Unit,
+    onVictory: () -> Unit,
     onDefeat: () -> Unit
 ) {
     val snapshot by vm.snapshot.collectAsStateWithLifecycle()
     val battle = snapshot.battle ?: return
 
-    var selectedAbilityId by remember { mutableStateOf<String?>(null) }
-    var activeActorId by remember { mutableStateOf<String?>(null) }
+    var selectedHeroId by remember { mutableStateOf<String?>(null) }
+    var armedAbilityId by remember { mutableStateOf<String?>(null) }
     var actingUnitId by remember { mutableStateOf<String?>(null) }
     var info by remember { mutableStateOf<InfoContent?>(null) }
+    var ultFlashText by remember { mutableStateOf<String?>(null) }
 
-    // Event-driven feedback: floating numbers, status announcements and
-    // screen shake. Later the same collection point drives real animations.
+    // Event-driven feedback: floating numbers, card reactions and screen
+    // shake, all keyed off the engine's combat events.
     val floaties = remember { mutableStateMapOf<String, List<Floaty>>() }
+    val flashes = remember { mutableStateMapOf<String, UnitFlash>() }
     val shake = remember { Animatable(0f) }
+
+    // Geometry for the ult drag: where the hero cards sit on screen and
+    // where the finger currently is, all in root coordinates.
+    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
+    var barTopLeft by remember { mutableStateOf(Offset.Zero) }
+    val playerRects = remember { mutableStateMapOf<String, Rect>() }
+    var dragPos by remember { mutableStateOf<Offset?>(null) }
 
     LaunchedEffect(vm) {
         var floatyKey = 0L
+        var flashKey = 0L
         fun addFloaty(unitId: String, text: String, color: Color, label: Boolean = false) {
             val key = floatyKey++
             floaties[unitId] = (floaties[unitId] ?: emptyList()) + Floaty(key, text, color, label)
@@ -83,6 +115,9 @@ fun BattleScreen(
                 delay(if (label) 1000L else 850L)
                 floaties[unitId] = (floaties[unitId] ?: emptyList()).filterNot { it.key == key }
             }
+        }
+        fun flashUnit(unitId: String, kind: FlashKind) {
+            flashes[unitId] = UnitFlash(flashKey++, kind)
         }
         fun statusColor(statusId: String): Color =
             Statuses.REGISTRY[statusId]?.let { GameIcons[it.iconId].tint } ?: TextMuted
@@ -103,25 +138,43 @@ fun BattleScreen(
         }
         vm.events.collect { event ->
             when (event) {
-                // Spotlight whoever is acting so enemy turns read clearly.
+                // Spotlight whoever is acting so enemy turns read clearly,
+                // and go full gold when the move is an ultimate.
                 is CombatEvent.AbilityUsed -> {
                     actingUnitId = event.actorId
                     launch {
                         delay(650)
                         if (actingUnitId == event.actorId) actingUnitId = null
                     }
+                    val actor = vm.snapshot.value.battle?.unitOrNull(event.actorId)
+                    if (actor != null && actor.ultimateId == event.abilityId) {
+                        ultFlashText = GameText.name(event.abilityId).uppercase()
+                        launch {
+                            delay(1000)
+                            ultFlashText = null
+                        }
+                    }
                 }
                 is CombatEvent.DamageDealt -> {
                     addFloaty(event.targetId, "-${event.amount}", if (event.isCrit) EnergyGold else Accent)
+                    flashUnit(event.targetId, FlashKind.HIT)
                     // Big hits and crits rattle the whole screen.
                     if (event.isCrit || event.amount >= 12) shakeScreen()
                 }
-                is CombatEvent.StatusTicked ->
+                is CombatEvent.StatusTicked -> {
                     addFloaty(event.targetId, "-${event.amount}", statusColor(event.statusId))
-                is CombatEvent.Healed -> addFloaty(event.targetId, "+${event.amount}", HpGreen)
-                is CombatEvent.ShieldGained -> addFloaty(event.targetId, "+${event.amount}", ShieldBlue)
+                    flashUnit(event.targetId, FlashKind.HIT)
+                }
+                is CombatEvent.Healed -> {
+                    addFloaty(event.targetId, "+${event.amount}", HpGreen)
+                    flashUnit(event.targetId, FlashKind.HEAL)
+                }
+                is CombatEvent.ShieldGained -> {
+                    addFloaty(event.targetId, "+${event.amount}", ShieldBlue)
+                    flashUnit(event.targetId, FlashKind.SHIELD)
+                }
                 // The status announcement: what just landed on whom, in the
-                // status's own color. Placeholder for real effect animations.
+                // status's own color.
                 is CombatEvent.StatusApplied ->
                     addFloaty(event.targetId, GameText.name(event.statusId).uppercase(),
                         statusColor(event.statusId), label = true)
@@ -140,26 +193,103 @@ fun BattleScreen(
         }
     }
 
-    // Any living hero can be the active actor: heroes who already acted can
-    // still spend the party's ultimate.
-    val pending = battle.pendingPlayers
-    val activeActor = battle.players.firstOrNull { it.id == activeActorId } ?: pending.firstOrNull()
-    if (activeActor?.id != activeActorId) {
-        activeActorId = activeActor?.id
-        selectedAbilityId = null
+    val selectedHero = battle.players.firstOrNull { it.id == selectedHeroId }
+    if (selectedHeroId != null && selectedHero == null) {
+        selectedHeroId = null
+        armedAbilityId = null
     }
-    val selectedAbility = activeActor?.abilities?.firstOrNull { it.id == selectedAbilityId }
+    val armedAbility = selectedHero?.abilities?.firstOrNull { it.id == armedAbilityId }
+    val weaponAbility = selectedHero?.abilities?.getOrNull(0)
+    val offhandAbility = selectedHero?.abilities?.getOrNull(1)
 
-    val inputLocked = snapshot.enemyTurnRunning || battle.phase != TurnPhase.PLAYER_INPUT
+    val inputLocked = snapshot.enemyTurnRunning || snapshot.stageClearing ||
+        battle.phase != TurnPhase.PLAYER_INPUT
 
-    fun useAbilityOn(targetId: String?) {
-        val actor = activeActor ?: return
-        val ability = selectedAbility ?: return
-        vm.playerAction(actor.id, ability.id, listOfNotNull(targetId))
-        selectedAbilityId = null
+    fun canUse(actor: CombatUnit, ability: Ability): Boolean =
+        battle.actionsLeft(actor) > 0 && actor.cooldownLeft(ability.id) == 0
+
+    fun clearSelection() {
+        selectedHeroId = null
+        armedAbilityId = null
     }
 
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    fun tapEnemy(enemy: CombatUnit) {
+        if (inputLocked || !enemy.isAlive) return
+        val actor = selectedHero ?: return
+        val ability = armedAbility ?: weaponAbility ?: return
+        if (!ability.targeting.targetsEnemy()) return
+        if (!canUse(actor, ability)) return
+        vm.playerAction(actor.id, ability.id, listOf(enemy.id))
+        clearSelection()
+    }
+
+    fun tapHero(hero: CombatUnit) {
+        if (inputLocked || !hero.isAlive) return
+        val actor = selectedHero
+        if (actor == null) {
+            selectedHeroId = hero.id
+            return
+        }
+        if (hero.id == actor.id) {
+            // Second tap on the same hero: an armed ally-ability lands on
+            // yourself, otherwise it's a deselect.
+            val armed = armedAbility
+            if (armed != null && armed.targeting.targetsAllyOrSelf() && canUse(actor, armed)) {
+                val targets = if (armed.targeting == Targeting.SELF) emptyList() else listOf(actor.id)
+                vm.playerAction(actor.id, armed.id, targets)
+                clearSelection()
+            } else {
+                clearSelection()
+            }
+            return
+        }
+        // Tapping a teammate: the offhand goes on them if it can; if it
+        // can't (spent, cooling down, wrong kind), the tap just switches
+        // which hero you're commanding.
+        val assist = when {
+            armedAbility?.targeting == Targeting.SINGLE_ALLY -> armedAbility
+            armedAbility == null && offhandAbility?.targeting == Targeting.SINGLE_ALLY -> offhandAbility
+            else -> null
+        }
+        if (assist != null && canUse(actor, assist)) {
+            vm.playerAction(actor.id, assist.id, listOf(hero.id))
+            clearSelection()
+        } else {
+            selectedHeroId = hero.id
+            armedAbilityId = null
+        }
+    }
+
+    // While the full bar is being dragged, whichever hero sits under the
+    // finger lights up as the ult's landing spot.
+    val dragTargetId = dragPos?.let { pos ->
+        playerRects.entries.firstOrNull { it.value.contains(pos) }?.key
+    }
+
+    val enemyAimAbility = armedAbility ?: weaponAbility
+    val canAim = selectedHero != null && enemyAimAbility != null &&
+        enemyAimAbility.targeting.targetsEnemy() && canUse(selectedHero, enemyAimAbility)
+    val assistAbility = when {
+        armedAbility != null && armedAbility.targeting == Targeting.SINGLE_ALLY -> armedAbility
+        armedAbility == null && offhandAbility != null &&
+            offhandAbility.targeting == Targeting.SINGLE_ALLY -> offhandAbility
+        else -> null
+    }
+    val canAssist = selectedHero != null && assistAbility != null && canUse(selectedHero, assistAbility)
+
+    val levelLabel = if (snapshot.levelIndex >= Battles.CAMPAIGN_LEVELS) {
+        "ENDLESS ${snapshot.levelIndex - Battles.CAMPAIGN_LEVELS + 1}"
+    } else {
+        "LEVEL ${snapshot.levelIndex + 1}"
+    }
+    val stageLabel = if (snapshot.stageCount > 1) " - STAGE ${snapshot.stage + 1}/${snapshot.stageCount}" else ""
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Ink)
+            .onGloballyPositioned { rootOrigin = it.positionInRoot() }
+    ) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -170,27 +300,38 @@ fun BattleScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = if (snapshot.enemyTurnRunning) "ROUND ${battle.round}" else "ROUND ${battle.round} - ${pending.size} TO ACT",
+                text = "$levelLabel$stageLabel - ROUND ${battle.round}",
                 color = TextMuted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
+            Text(
+                text = when {
+                    snapshot.enemyTurnRunning -> "ENEMY TURN"
+                    selectedHero != null -> "${selectedHero.name.uppercase()}: TAP AN ENEMY TO ATTACK, AN ALLY TO ASSIST"
+                    else -> "TAP A HERO TO COMMAND - ${battle.pendingPlayers.size} TO ACT"
+                },
+                color = TextMuted,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
 
             // Enemy line
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (enemy in battle.units.filter { it.team == Team.ENEMY }) {
-                    val targetable = !inputLocked && selectedAbility != null &&
-                        enemy.isAlive && selectedAbility.targeting.targetsEnemy()
                     UnitCard(
                         unit = enemy,
-                        isTargetable = targetable,
+                        isTargetable = canAim && enemy.isAlive,
                         isActiveActor = false,
                         isActing = enemy.id == actingUnitId,
+                        flash = flashes[enemy.id],
                         floaties = floaties[enemy.id] ?: emptyList(),
-                        onClick = { if (targetable) useAbilityOn(enemy.id) },
+                        onClick = { tapEnemy(enemy) },
                         onLongClick = { info = GameText.unitInfo(enemy) }
                     )
                 }
@@ -201,55 +342,51 @@ fun BattleScreen(
             // Player line
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (player in battle.units.filter { it.team == Team.PLAYER }) {
-                    val allyTargetable = !inputLocked && selectedAbility != null &&
-                        player.isAlive && selectedAbility.targeting == Targeting.SINGLE_ALLY
                     UnitCard(
                         unit = player,
-                        isTargetable = allyTargetable,
-                        isActiveActor = player.id == activeActor?.id,
+                        isTargetable = (canAssist && player.isAlive && player.id != selectedHero?.id) ||
+                            player.id == dragTargetId,
+                        isActiveActor = player.id == selectedHero?.id,
+                        isActing = player.id == actingUnitId,
+                        flash = flashes[player.id],
                         floaties = floaties[player.id] ?: emptyList(),
+                        onClick = { tapHero(player) },
                         onLongClick = { info = GameText.unitInfo(player) },
-                        onClick = {
-                            when {
-                                allyTargetable -> useAbilityOn(player.id)
-                                !player.isAlive -> {}
-                                else -> {
-                                    activeActorId = player.id
-                                    selectedAbilityId = null
-                                }
-                            }
+                        modifier = Modifier.onGloballyPositioned {
+                            playerRects[player.id] = it.boundsInRoot()
                         }
                     )
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Ability bar for whichever hero is up
+            // The selected hero's kit: weapon, offhand, ultimate. Tapping a
+            // chip arms it for the next tap on a target; the ult chip only
+            // explains itself — ults fire from the bar.
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (activeActor != null) {
-                    val actorSpent = battle.actionsLeft(activeActor) <= 0
-                    for (ability in activeActor.abilities) {
-                        val isUltimate = ability.id == activeActor.ultimateId
-                        val usable = activeActor.cooldownLeft(ability.id) == 0 &&
-                            if (isUltimate) battle.partyUltReady else !actorSpent
+                if (selectedHero != null) {
+                    for (ability in selectedHero.abilities) {
+                        val isUltimate = ability.id == selectedHero.ultimateId
+                        val usable = if (isUltimate) battle.partyUltReady else canUse(selectedHero, ability)
                         AbilityButton(
                             ability = ability,
-                            selected = ability.id == selectedAbilityId,
+                            selected = ability.id == armedAbilityId,
                             enabled = !inputLocked && usable,
-                            cooldownLeft = activeActor.cooldownLeft(ability.id),
-                            onLongClick = { info = GameText.abilityInfo(ability, activeActor.baseAttack, isUltimate) },
+                            cooldownLeft = selectedHero.cooldownLeft(ability.id),
+                            onLongClick = {
+                                info = GameText.abilityInfo(ability, selectedHero.baseAttack, isUltimate)
+                            },
                             onClick = {
-                                if (ability.targeting.needsChosenTarget()) {
-                                    selectedAbilityId =
-                                        if (selectedAbilityId == ability.id) null else ability.id
+                                if (isUltimate) return@AbilityButton
+                                if (ability.targeting == Targeting.SELF) {
+                                    vm.playerAction(selectedHero.id, ability.id, emptyList())
+                                    clearSelection()
                                 } else {
-                                    // Self / whole-line abilities fire on tap.
-                                    vm.playerAction(activeActor.id, ability.id, emptyList())
-                                    selectedAbilityId = null
+                                    armedAbilityId = if (armedAbilityId == ability.id) null else ability.id
                                 }
                             }
                         )
@@ -258,17 +395,125 @@ fun BattleScreen(
             }
 
             Spacer(Modifier.height(12.dp))
-            UltMeterBar(
-                percent = battle.partyUltCharge,
-                modifier = Modifier.fillMaxWidth(0.72f)
+
+            Box(
+                Modifier
+                    .fillMaxWidth(0.72f)
+                    .onGloballyPositioned { barTopLeft = it.positionInRoot() }
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                val snap = vm.snapshot.value
+                                val b = snap.battle
+                                if (b != null && b.partyUltReady && !snap.enemyTurnRunning &&
+                                    !snap.stageClearing && b.phase == TurnPhase.PLAYER_INPUT
+                                ) {
+                                    dragPos = barTopLeft + offset
+                                }
+                            },
+                            onDrag = { change, amount ->
+                                if (dragPos != null) {
+                                    change.consume()
+                                    dragPos = dragPos!! + amount
+                                }
+                            },
+                            onDragEnd = {
+                                val pos = dragPos
+                                dragPos = null
+                                if (pos != null) {
+                                    val targetId = playerRects.entries
+                                        .firstOrNull { it.value.contains(pos) }?.key
+                                    val b = vm.snapshot.value.battle
+                                    val hero = targetId?.let { b?.unitOrNull(it) }
+                                    val ultId = hero?.ultimateId
+                                    if (hero != null && hero.isAlive && ultId != null) {
+                                        vm.playerAction(hero.id, ultId, emptyList())
+                                    }
+                                }
+                            },
+                            onDragCancel = { dragPos = null }
+                        )
+                    }
+            ) {
+                UltMeterBar(percent = battle.partyUltPercent, modifier = Modifier.fillMaxWidth())
+            }
+            Text(
+                text = if (battle.partyUltReady) "ULT READY - DRAG THE BAR ONTO A HERO"
+                else "ULT ${battle.partyUltPercent}%",
+                color = if (battle.partyUltReady) EnergyGold else TextMuted,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(top = 6.dp)
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // The gold orb chasing the finger during an ult drag.
+        dragPos?.let { pos ->
+            val local = pos - rootOrigin
+            Box(
+                Modifier
+                    .offset { IntOffset((local.x - 18.dp.toPx()).roundToInt(), (local.y - 18.dp.toPx()).roundToInt()) }
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(EnergyGold)
+                    .border(3.dp, Color(0xFFFFF3C4), CircleShape)
+            )
+        }
+
+        // Full-screen wash when an ultimate goes off.
+        ultFlashText?.let { text ->
+            val wash = remember(text) { Animatable(0.45f) }
+            LaunchedEffect(text) { wash.animateTo(0f, tween(durationMillis = 900)) }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(EnergyGold.copy(alpha = wash.value))
+            )
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = text,
+                    color = EnergyGold,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 4.sp
+                )
+            }
         }
 
         InfoOverlay(content = info, onDismiss = { info = null })
 
-        // Battle end overlay
-        if (battle.phase == TurnPhase.BATTLE_OVER) {
+        // Between stages: the wave is down but the level isn't over.
+        if (snapshot.stageClearing) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0x9914141A)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "STAGE ${snapshot.stage + 1} CLEAR",
+                        color = HpGreen,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 3.sp
+                    )
+                    Text(
+                        "NEXT WAVE INCOMING",
+                        color = TextBright,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
+
+        // Battle end overlay: only when the whole level is decided.
+        if (battle.phase == TurnPhase.BATTLE_OVER && (battle.isDefeat || snapshot.onFinalStage)) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -287,7 +532,7 @@ fun BattleScreen(
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(
-                        onClick = { if (won) onVictory(battle.players.size) else onDefeat() },
+                        onClick = { if (won) onVictory() else onDefeat() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Accent,
                             contentColor = Ink
@@ -306,15 +551,10 @@ fun BattleScreen(
 }
 
 private fun Targeting.targetsEnemy(): Boolean = when (this) {
-    Targeting.SINGLE_ENEMY, Targeting.ADJACENT_ENEMIES,
-    Targeting.ALL_ENEMIES, Targeting.RANDOM_ENEMY, Targeting.RANDOM_ENEMIES_MULTI -> true
+    Targeting.SINGLE_ENEMY, Targeting.ADJACENT_ENEMIES, Targeting.ALL_ENEMIES,
+    Targeting.RANDOM_ENEMY, Targeting.RANDOM_ENEMIES_MULTI, Targeting.HIGHEST_HP_ENEMY -> true
     else -> false
 }
 
-// Every attack is aimed by hand: even sprays and full-line hits wait for a
-// tap on an enemy. Only self/party abilities fire straight from the button.
-private fun Targeting.needsChosenTarget(): Boolean = when (this) {
-    Targeting.SINGLE_ENEMY, Targeting.SINGLE_ALLY, Targeting.ADJACENT_ENEMIES,
-    Targeting.ALL_ENEMIES, Targeting.RANDOM_ENEMY, Targeting.RANDOM_ENEMIES_MULTI -> true
-    else -> false
-}
+private fun Targeting.targetsAllyOrSelf(): Boolean =
+    this == Targeting.SINGLE_ALLY || this == Targeting.SELF

@@ -100,4 +100,21 @@ object Enemies {
         abilities = listOf(EnemyAbilities.SILVER_STORM),
         charge = ChargeState(chargingAbilityId = "silver_storm", turnsRequired = 2)
     )
+
+    // The mastermind. Level 100 is a three-stage fight and Gray anchors
+    // every stage of it: slow and shielded at first, then faster and
+    // meaner as each form falls. Gray never defects.
+    fun gray(id: String, phase: Int): CombatUnit {
+        val (hp, attack, turns) = when (phase) {
+            1 -> Triple(140, 11, 3)
+            2 -> Triple(160, 13, 2)
+            else -> Triple(190, 15, 2)
+        }
+        return CombatUnit(
+            id = id, name = "Gray", iconId = "ic_enemy_gray",
+            maxHp = hp, hp = hp, team = Team.ENEMY, baseAttack = attack,
+            abilities = listOf(EnemyAbilities.NULL_WAVE),
+            charge = ChargeState(chargingAbilityId = "null_wave", turnsRequired = turns)
+        )
+    }
 }

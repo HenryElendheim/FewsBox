@@ -209,9 +209,9 @@ class BattleEngine(
                     emit(CombatEvent.UnitDied(unit.id))
                     return
                 }
-                // Suffering builds the meter too.
+                // Suffering builds the meter too, one payment per tick.
                 if (unit.team == Team.PLAYER) {
-                    resolver.gainPartyUlt(state, amount * Resolver.ULT_PER_DAMAGE_TAKEN)
+                    resolver.gainPartyUlt(state, Resolver.ultForHitTaken(unit, amount))
                 }
             } else {
                 resolver.healUnit(unit, amount)

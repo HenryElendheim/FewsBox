@@ -333,7 +333,7 @@ object Ultimates {
         // RED - one colossal, exact hit. No dice. Grows with his level.
         "ult_red" -> Ability(
             id = "ult_red", iconId = "ic_ult_red",
-            targeting = Targeting.SINGLE_ENEMY,
+            targeting = Targeting.HIGHEST_HP_ENEMY,
             effects = listOf(Effect.DealFlatDamage(amount = 50 + 10 * (level - 1)))
         )
 
@@ -494,6 +494,18 @@ object EnemyAbilities {
         effects = listOf(Effect.GainShield(amount = 10))
     )
 
+    // Gray's charged payoff for the final fight: the whole party hit and
+    // hollowed out. Hard, not cheap - it telegraphs like everything else.
+    val NULL_WAVE = Ability(
+        id = "null_wave",
+        iconId = "ic_atk_null",
+        targeting = Targeting.ALL_ENEMIES,
+        effects = listOf(
+            Effect.DealDamage(multiplier = 1.2f, hits = 1, canCrit = false),
+            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)
+        )
+    )
+
     // Silver's charged payoff — the whole party takes a hit and fights on
     // weakened. The first boss teaches you to respect the ring.
     val SILVER_STORM = Ability(
@@ -508,7 +520,7 @@ object EnemyAbilities {
 
     val ALL = listOf(
         BASIC_SLASH, SMALL_GUARD, SMALL_HEAL, VENOM_SPIT,
-        CRUSHING_BLOW, DOOM_BOLT, ASH_CLOUD, CINDER_SPIT, EMBER_GUARD, SILVER_STORM
+        CRUSHING_BLOW, DOOM_BOLT, ASH_CLOUD, CINDER_SPIT, EMBER_GUARD, SILVER_STORM, NULL_WAVE
     )
     val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
 }

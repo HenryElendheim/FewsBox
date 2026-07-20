@@ -29,7 +29,8 @@ object Progression {
     }
 
     /** Winning battle [battleIndex] pays this much XP to each fighter. */
-    fun xpRewardFor(battleIndex: Int): Int = 10 + battleIndex * 2
+    // XP is paid from battle performance now: damage dealt plus a small
+    // survivor's bonus, computed by the app from the battle result.
 
     // ------------------------------------------------------------------
     //  What a hero level unlocks. Weapon list order IS the unlock order,

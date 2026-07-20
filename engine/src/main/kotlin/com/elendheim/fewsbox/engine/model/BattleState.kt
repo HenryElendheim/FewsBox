@@ -11,11 +11,13 @@ data class BattleState(
     // Enemies waiting to act this enemy phase; lets the UI step through
     // one turn at a time and pace the round.
     val enemyQueue: MutableList<String> = mutableListOf(),
-    // The party's shared ultimate meter, 0..100. Everyone's damage dealt
-    // and taken fills it; any hero may spend it when full.
+    // The party's shared ultimate meter in TENTHS of a percent (0..1000):
+    // +5% per landed attack, +3% per hit taken (+15% for a hit that costs
+    // over half the hero's max HP), never over full.
     var partyUltCharge: Int = 0
 ) {
-    val partyUltReady: Boolean get() = partyUltCharge >= 100
+    val partyUltPercent: Int get() = partyUltCharge / 10
+    val partyUltReady: Boolean get() = partyUltCharge >= 1000
 
     val players get() = units.filter { it.team == Team.PLAYER && it.isAlive }
     val enemies get() = units.filter { it.team == Team.ENEMY && it.isAlive }

@@ -1,5 +1,10 @@
 package com.elendheim.fewsbox.ui.results
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,9 +24,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +48,7 @@ import com.elendheim.fewsbox.ui.theme.Panel
 import com.elendheim.fewsbox.ui.theme.PanelRaised
 import com.elendheim.fewsbox.ui.theme.TextBright
 import com.elendheim.fewsbox.ui.theme.TextMuted
+import kotlinx.coroutines.delay
 
 /** Everything the win screen needs about one hero's payday. */
 data class HeroResult(
@@ -42,14 +56,16 @@ data class HeroResult(
     val name: String,
     val iconId: String,
     val xpGained: Int,
+    val xpBefore: Int,
     val xpAfter: Int,
     val levelBefore: Int,
     val levelAfter: Int
 )
 
 /**
- * The victory screen: stars earned, XP paid out, level-ups celebrated,
- * and a note when a beaten boss defects to the roster.
+ * The victory screen, staged like a payoff: stars pop in one at a time,
+ * then each hero's XP bar physically fills with what they earned. XP is
+ * damage dealt plus a survivor's bonus, so the bars mean something.
  */
 @Composable
 fun ResultsScreen(
@@ -58,6 +74,23 @@ fun ResultsScreen(
     unlockedHeroName: String?,
     onContinue: () -> Unit
 ) {
+    // 0 = nothing shown yet; counts up as stars land, then rows appear.
+    var starsShown by remember { mutableIntStateOf(0) }
+    var rowsVisible by remember { mutableStateOf(false) }
+    val showStars = stars > 0
+
+    LaunchedEffect(Unit) {
+        delay(350)
+        if (showStars) {
+            repeat(stars) {
+                delay(430)
+                starsShown++
+            }
+        }
+        delay(380)
+        rowsVisible = true
+    }
+
     Box(Modifier.fillMaxSize().background(Ink)) {
         Column(
             Modifier
@@ -77,26 +110,27 @@ fun ResultsScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            // The stars this run earned.
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                repeat(3) { i ->
-                    Box(
-                        Modifier
-                            .size(if (i == 1) 44.dp else 36.dp)
-                            .clip(CircleShape)
-                            .background(if (i < stars) EnergyGold else PanelRaised)
-                    )
+            if (showStars) {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    repeat(3) { i ->
+                        StarPop(
+                            size = if (i == 1) 44.dp else 36.dp,
+                            earned = i < stars,
+                            landed = i < starsShown
+                        )
+                    }
                 }
-            }
-
-            Spacer(Modifier.height(28.dp))
-
-            for (result in heroResults) {
-                HeroResultRow(result)
+                Spacer(Modifier.height(28.dp))
+            } else {
                 Spacer(Modifier.height(10.dp))
             }
 
-            if (unlockedHeroName != null) {
+            for (result in heroResults) {
+                HeroResultRow(result, animate = rowsVisible)
+                Spacer(Modifier.height(10.dp))
+            }
+
+            if (unlockedHeroName != null && rowsVisible) {
                 Spacer(Modifier.height(10.dp))
                 Column(
                     Modifier
@@ -135,12 +169,54 @@ fun ResultsScreen(
     }
 }
 
+/** One star slamming into place: overshoots big, settles, stays gold. */
 @Composable
-private fun HeroResultRow(result: HeroResult) {
-    val leveled = result.levelAfter > result.levelBefore
+private fun StarPop(size: androidx.compose.ui.unit.Dp, earned: Boolean, landed: Boolean) {
+    val scale = remember { Animatable(0f) }
+    LaunchedEffect(landed) {
+        if (landed) {
+            scale.snapTo(1.7f)
+            scale.animateTo(
+                1f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+            )
+        }
+    }
+    Box(
+        Modifier
+            .size(size)
+            .graphicsLayer {
+                val s = if (landed) scale.value else 1f
+                scaleX = s
+                scaleY = s
+            }
+            .clip(CircleShape)
+            .background(if (landed && earned) EnergyGold else PanelRaised)
+    )
+}
+
+@Composable
+private fun HeroResultRow(result: HeroResult, animate: Boolean) {
+    // The row's XP counts up from where the hero started to where they
+    // ended, and the bar fills along with it — across level-ups too.
+    val shownXp = remember { Animatable(result.xpBefore.toFloat()) }
+    LaunchedEffect(animate) {
+        if (animate && result.xpAfter > result.xpBefore) {
+            shownXp.animateTo(
+                result.xpAfter.toFloat(),
+                tween(durationMillis = 900, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+    val xpNow = shownXp.value.toInt()
+    val levelNow = Progression.levelFor(xpNow)
+    val leveled = levelNow > result.levelBefore
+
+    val rowAlpha = if (animate) 1f else 0.25f
     Row(
         Modifier
             .fillMaxWidth()
+            .alpha(rowAlpha)
             .clip(RoundedCornerShape(14.dp))
             .background(Panel)
             .padding(12.dp),
@@ -159,14 +235,14 @@ private fun HeroResultRow(result: HeroResult) {
                 Spacer(Modifier.width(8.dp))
                 if (leveled) {
                     Text(
-                        "LEVEL UP  ${result.levelBefore} > ${result.levelAfter}",
+                        "LEVEL UP  ${result.levelBefore} > $levelNow",
                         color = EnergyGold,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black
                     )
                 } else {
                     Text(
-                        "LV ${result.levelAfter}",
+                        "LV $levelNow",
                         color = HpGreen,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black
@@ -174,7 +250,7 @@ private fun HeroResultRow(result: HeroResult) {
                 }
             }
             Spacer(Modifier.height(6.dp))
-            XpBar(result.xpAfter)
+            XpBar(xpNow)
         }
         Spacer(Modifier.width(12.dp))
         Text(

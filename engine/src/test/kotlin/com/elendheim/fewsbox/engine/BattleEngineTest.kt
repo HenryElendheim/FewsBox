@@ -56,22 +56,41 @@ class BattleEngineTest {
         // Meter empty: the ultimate is refused.
         assertFalse(eng.playerAction(state, "p", "big_one", listOf("e")))
 
-        // Deal 10 (+20%), take 10 (+30%) per round -> 50, then 100.
+        // One attack landed (+5%) and one 10-damage hit taken (+3%) per
+        // round: 80 tenths, then 160.
         eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
         eng.finishRound(state)
-        assertEquals(50, state.partyUltCharge)
+        assertEquals(80, state.partyUltCharge)
 
         eng.playerAction(state, "p", player.abilities[0].id, listOf("e"))
         eng.finishRound(state)
-        assertEquals(100, state.partyUltCharge)
+        assertEquals(160, state.partyUltCharge)
 
-        // Round three: attack first (turn spent), then the ultimate still
-        // fires - it rides the party meter, not the hero's turn.
+        // With a full meter: attack first (turn spent), then the ultimate
+        // still fires - it rides the party meter, not the hero's turn.
+        state.partyUltCharge = 1000
         assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
         assertFalse(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
         assertTrue(eng.playerAction(state, "p", "big_one", listOf("e")))
         assertEquals(0, state.partyUltCharge)
         assertTrue(rec.all<CombatEvent.UltChargeChanged>().isNotEmpty())
+    }
+
+    @Test
+    fun `a hit past half max health pays the big meter bonus`() {
+        val rec = Recorder()
+        val player = unit("p", Team.PLAYER, hp = 100, attack = 10, abilities = listOf(plainHit(1.0f)))
+        val enemy = unit("e", Team.ENEMY, hp = 500, attack = 60,
+            abilities = listOf(slash()), aiProfile = slashProfile())
+        val state = battle(player, enemy)
+        val eng = engine(rec)
+        eng.startBattle(state)
+
+        // The player sits the round out; the enemy lands 60 on a 100 HP
+        // hero, which is worth 15% instead of 3%.
+        state.spendAction("p")
+        eng.finishRound(state)
+        assertEquals(150, state.partyUltCharge)
     }
 
     @Test
@@ -336,31 +355,100 @@ class BattleEngineTest {
     }
 
     @Test
-    fun `starter battles all run to completion without stalling`() {
-        for (battleIndex in 0 until Battles.count) {
-            val rec = Recorder()
-            val state = Battles.create(battleIndex, Party.defaultParty())
-            val eng = BattleEngine(Statuses.REGISTRY, Random(battleIndex), rec.emit)
-            eng.startBattle(state)
+    fun `every campaign level and stage runs to completion without stalling`() {
+        for (level in 0 until Battles.count) {
+            for (stage in 0 until Battles.stageCountFor(level)) {
+                val rec = Recorder()
+                val state = Battles.createStage(level, stage, Party.defaultParty())
+                val eng = BattleEngine(Statuses.REGISTRY, Random(level * 100L + stage), rec.emit)
+                eng.startBattle(state)
 
-            var rounds = 0
-            while (state.phase != TurnPhase.BATTLE_OVER && rounds < 200) {
-                for (p in state.pendingPlayers) {
-                    val target = state.enemies.firstOrNull() ?: break
-                    val usable = p.abilities.firstOrNull {
-                        p.cooldownLeft(it.id) == 0 && (it.id != p.ultimateId || state.partyUltReady)
+                var rounds = 0
+                while (state.phase != TurnPhase.BATTLE_OVER && rounds < 200) {
+                    for (p in state.pendingPlayers) {
+                        val target = state.enemies.firstOrNull() ?: break
+                        val usable = p.abilities.firstOrNull {
+                            p.cooldownLeft(it.id) == 0 && (it.id != p.ultimateId || state.partyUltReady)
+                        }
+                        if (usable != null) {
+                            eng.playerAction(state, p.id, usable.id, listOf(target.id))
+                        } else {
+                            state.spendAction(p.id) // nothing usable: pass
+                        }
+                        if (state.phase == TurnPhase.BATTLE_OVER) break
                     }
-                    if (usable != null) {
-                        eng.playerAction(state, p.id, usable.id, listOf(target.id))
-                    } else {
-                        state.spendAction(p.id) // nothing usable: pass
-                    }
-                    if (state.phase == TurnPhase.BATTLE_OVER) break
+                    if (state.phase != TurnPhase.BATTLE_OVER) eng.finishRound(state)
+                    rounds++
                 }
-                if (state.phase != TurnPhase.BATTLE_OVER) eng.finishRound(state)
-                rounds++
+                assertEquals(TurnPhase.BATTLE_OVER, state.phase, "level $level stage $stage never ended")
             }
-            assertEquals(TurnPhase.BATTLE_OVER, state.phase, "battle $battleIndex never ended")
         }
+    }
+
+    @Test
+    fun `stage counts follow the campaign plan and stay deterministic in endless`() {
+        // Bosses: three set pieces are single fights, the finale runs three.
+        assertEquals(1, Battles.stageCountFor(Battles.ASH_BOSS_INDEX))
+        assertEquals(1, Battles.stageCountFor(Battles.SILVER_BOSS_INDEX))
+        assertEquals(1, Battles.stageCountFor(Battles.TWIN_BOSS_INDEX))
+        assertEquals(3, Battles.stageCountFor(Battles.FINAL_BOSS_INDEX))
+
+        // Every 10th level is a gauntlet of 3 to 5 stages; the rest are single.
+        for (level in 0 until Battles.count) {
+            val stages = Battles.stageCountFor(level)
+            if (Battles.isBossLevel(level)) continue
+            if ((level + 1) % 10 == 0) {
+                assertTrue(stages in 3..5, "level $level gauntlet has $stages stages")
+            } else {
+                assertEquals(1, stages, "level $level should be a single fight")
+            }
+        }
+
+        // Endless: same level always rolls the same count, capped at 8.
+        for (level in 100 until 300) {
+            val stages = Battles.stageCountFor(level)
+            assertEquals(stages, Battles.stageCountFor(level))
+            assertTrue(stages == 1 || stages in 3..8, "endless $level rolled $stages stages")
+        }
+    }
+
+    @Test
+    fun `later stages inherit survivors and the ult meter`() {
+        val party = Party.defaultParty()
+        val first = Battles.createStage(9, 0, party)
+        first.partyUltCharge = 300
+        val hero = first.players.first()
+        hero.hp = 17
+        hero.damageDealtTotal = 42
+
+        val second = Battles.createStage(
+            9, 1, party,
+            carriedPlayers = first.players,
+            carriedUltCharge = first.partyUltCharge
+        )
+        assertEquals(300, second.partyUltCharge)
+        val carried = second.players.first { it.id == hero.id }
+        assertEquals(17, carried.hp)
+        assertEquals(42, carried.damageDealtTotal)
+        assertTrue(second.enemies.isNotEmpty())
+
+        // Fresh enemies each stage, same enemies for the same stage.
+        val rerolled = Battles.createStage(9, 1, party)
+        assertEquals(
+            second.enemies.map { it.iconId to it.maxHp },
+            rerolled.enemies.map { it.iconId to it.maxHp }
+        )
+    }
+
+    @Test
+    fun `the finale is gray in every stage and gray never defects`() {
+        for (stage in 0 until 3) {
+            val state = Battles.createStage(Battles.FINAL_BOSS_INDEX, stage, Party.defaultParty())
+            assertTrue(
+                state.enemies.any { it.name == "Gray" },
+                "final boss stage $stage is missing Gray"
+            )
+        }
+        assertTrue(Battles.unlocks.none { it.key == Battles.FINAL_BOSS_INDEX })
     }
 }

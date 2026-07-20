@@ -22,6 +22,7 @@ object SaveStore {
     private const val KEY_SELECTED = "selected_level"
     private const val KEY_PARTY = "party_ids"
     private const val KEY_UNLOCKED = "unlocked_heroes"
+    private const val KEY_ENDLESS_BEST = "endless_best"
 
     data class SaveData(
         val maxUnlocked: Int,
@@ -30,7 +31,8 @@ object SaveStore {
         val heroXp: Map<String, Int>,
         val selectedIds: Set<String>,
         val roster: List<Loadout>,
-        val unlockedIds: Set<String>
+        val unlockedIds: Set<String>,
+        val endlessBest: Int
     )
 
     fun load(context: Context): SaveData {
@@ -79,7 +81,9 @@ object SaveStore {
             .toSet()
             .ifEmpty { Party.DEFAULT_PARTY_IDS }
 
-        return SaveData(maxUnlocked, selectedLevel, bestStars, heroXp, selected, roster, unlocked)
+        val endlessBest = prefs.getInt(KEY_ENDLESS_BEST, 0).coerceAtLeast(0)
+
+        return SaveData(maxUnlocked, selectedLevel, bestStars, heroXp, selected, roster, unlocked, endlessBest)
     }
 
     fun save(
@@ -90,11 +94,13 @@ object SaveStore {
         heroXp: Map<String, Int>,
         selectedIds: Set<String>,
         roster: List<Loadout>,
-        unlockedIds: Set<String>
+        unlockedIds: Set<String>,
+        endlessBest: Int
     ) {
         val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
         editor.putInt(KEY_MAX_UNLOCKED, maxUnlocked)
         editor.putInt(KEY_SELECTED, selectedLevel)
+        editor.putInt(KEY_ENDLESS_BEST, endlessBest)
         editor.putStringSet(KEY_PARTY, selectedIds)
         editor.putStringSet(KEY_UNLOCKED, unlockedIds)
         for ((level, stars) in bestStars) editor.putInt("level_$level.stars", stars)

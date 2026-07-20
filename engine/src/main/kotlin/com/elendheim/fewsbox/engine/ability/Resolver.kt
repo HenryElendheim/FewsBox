@@ -28,9 +28,15 @@ class Resolver(
         const val CRIT_CHANCE = 0.10f
         const val CRIT_MULTIPLIER = 1.5f
 
-        // Ultimate meter: percent gained per point of damage dealt / taken.
-        const val ULT_PER_DAMAGE_DEALT = 2
-        const val ULT_PER_DAMAGE_TAKEN = 3
+        // Ultimate meter, in tenths of a percent. Landing an attack pays a
+        // flat 5%; each hit taken pays 3% — or 15% when a single hit costs
+        // more than half the hero's max HP.
+        const val ULT_PER_ATTACK = 50
+        const val ULT_PER_HIT_TAKEN = 30
+        const val ULT_BIG_HIT_TAKEN = 150
+
+        fun ultForHitTaken(target: CombatUnit, amount: Int): Int =
+            if (amount > target.maxHp / 2) ULT_BIG_HIT_TAKEN else ULT_PER_HIT_TAKEN
     }
 
     /** Running totals for one ability use; lifesteal reads damageDealt. */
@@ -59,6 +65,12 @@ class Resolver(
                     applyEffect(state, actor, target, effect, ctx)
                 }
             }
+        }
+
+        // Attacking builds the party meter: one flat payment per swing that
+        // actually lands damage, no matter how many hits it splits into.
+        if (actor.team == Team.PLAYER && ctx.damageDealt > 0) {
+            gainPartyUlt(state, ULT_PER_ATTACK)
         }
     }
 
@@ -91,6 +103,7 @@ class Resolver(
                 val chosen = chosenIds.firstOrNull()?.let { id -> foes.firstOrNull { it.id == id } }
                 listOfNotNull(taunter ?: chosen ?: foes.random(rng))
             }
+            Targeting.HIGHEST_HP_ENEMY -> listOf(foes.maxBy { it.hp })
             Targeting.ALL_ENEMIES -> foes
             Targeting.RANDOM_ENEMY -> listOf(foes.random(rng))
             Targeting.RANDOM_ENEMIES_MULTI -> foes  // per-hit picks happen in resolve()
@@ -246,12 +259,13 @@ class Resolver(
     ) {
         applyDamage(target, amount)
         ctx.damageDealt += amount
+        actor.damageDealtTotal += amount
         emit(CombatEvent.DamageDealt(target.id, amount, isCrit))
         if (!target.isAlive) emit(CombatEvent.UnitDied(target.id))
 
-        // The party's shared meter fills whenever heroes deal or take damage.
-        if (actor.team == Team.PLAYER) gainPartyUlt(state, amount * ULT_PER_DAMAGE_DEALT)
-        if (target.team == Team.PLAYER) gainPartyUlt(state, amount * ULT_PER_DAMAGE_TAKEN)
+        // Getting hit builds the party meter, and getting truly hurt —
+        // over half your max HP in one blow — builds it fast.
+        if (target.team == Team.PLAYER) gainPartyUlt(state, ultForHitTaken(target, amount))
 
         // Thorns: the target strikes back a flat amount per hit taken. The
         // reflection never re-reflects and doesn't feed lifesteal.
@@ -261,19 +275,19 @@ class Resolver(
         }
         if (reflect > 0 && actor.isAlive) {
             applyDamage(actor, reflect)
+            target.damageDealtTotal += reflect
             emit(CombatEvent.DamageDealt(actor.id, reflect, false))
-            if (target.team == Team.PLAYER) gainPartyUlt(state, reflect * ULT_PER_DAMAGE_DEALT)
-            if (actor.team == Team.PLAYER) gainPartyUlt(state, reflect * ULT_PER_DAMAGE_TAKEN)
+            if (actor.team == Team.PLAYER) gainPartyUlt(state, ultForHitTaken(actor, reflect))
             if (!actor.isAlive) emit(CombatEvent.UnitDied(actor.id))
         }
     }
 
-    /** Fill the party's shared ultimate meter, capped at 100. */
+    /** Fill the party's shared ultimate meter, hard-capped at full. */
     fun gainPartyUlt(state: BattleState, amount: Int) {
         if (amount <= 0) return
         val before = state.partyUltCharge
-        state.partyUltCharge = (state.partyUltCharge + amount).coerceAtMost(100)
-        if (state.partyUltCharge != before) emit(CombatEvent.UltChargeChanged(state.partyUltCharge))
+        state.partyUltCharge = (state.partyUltCharge + amount).coerceIn(0, 1000)
+        if (state.partyUltCharge != before) emit(CombatEvent.UltChargeChanged(state.partyUltPercent))
     }
 
     private fun passiveFactor(unit: CombatUnit, passive: PassiveEffect, reduces: Boolean): Float {

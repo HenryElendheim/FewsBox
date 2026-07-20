@@ -21,7 +21,8 @@ data class CombatUnit(
     val charge: ChargeState? = null, // non-null for elites that telegraph big hits
     val aiProfile: AiProfile? = null, // null for player-controlled units
     val cooldowns: MutableMap<String, Int> = mutableMapOf(), // abilityId -> turns left
-    val ultimateId: String? = null   // which ability is gated by the party ult meter
+    val ultimateId: String? = null,  // which ability is gated by the party ult meter
+    var damageDealtTotal: Int = 0    // running battle total, feeds XP payouts
 ) {
     val isAlive: Boolean get() = hp > 0
 

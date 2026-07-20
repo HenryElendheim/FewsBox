@@ -1,10 +1,14 @@
 package com.elendheim.fewsbox.ui.battle
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -28,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.elendheim.fewsbox.engine.model.ActiveStatus
 import com.elendheim.fewsbox.engine.model.CombatUnit
+import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Resolver
@@ -58,9 +64,14 @@ import com.elendheim.fewsbox.ui.theme.Ink
 import com.elendheim.fewsbox.ui.theme.PanelRaised
 import com.elendheim.fewsbox.ui.theme.ShieldBlue
 import com.elendheim.fewsbox.ui.theme.TextMuted
+import kotlinx.coroutines.launch
 
 /** One floating combat number or status label above a unit. */
 data class Floaty(val key: Long, val text: String, val color: Color, val label: Boolean = false)
+
+/** A one-shot reaction on a unit card: recoil on a hit, glow on help. */
+enum class FlashKind { HIT, HEAL, SHIELD }
+data class UnitFlash(val key: Long, val kind: FlashKind)
 
 @Composable
 fun HpBar(hp: Int, maxHp: Int, modifier: Modifier = Modifier) {
@@ -155,9 +166,11 @@ fun UnitCard(
     isTargetable: Boolean,
     isActiveActor: Boolean,
     isActing: Boolean = false,   // this unit's move is playing out right now
+    flash: UnitFlash? = null,    // latest hit/heal/shield reaction to play
     floaties: List<Floaty>,
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val actingScale by animateFloatAsState(
         targetValue = if (isActing) 1.14f else 1f,
@@ -169,6 +182,51 @@ fun UnitCard(
         animationSpec = tween(durationMillis = 500),
         label = "death"
     )
+
+    // The attacker steps toward the other line and springs back.
+    val lunge = remember { Animatable(0f) }
+    LaunchedEffect(isActing) {
+        if (isActing) {
+            val toward = if (unit.team == Team.PLAYER) -26f else 26f
+            lunge.animateTo(toward, tween(durationMillis = 130, easing = FastOutSlowInEasing))
+            lunge.animateTo(
+                0f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+            )
+        }
+    }
+
+    // Reaction to what just happened to this unit: recoil and a red wash on
+    // a hit, a swell and green/blue wash on heals and shields.
+    val punch = remember { Animatable(1f) }
+    val washAlpha = remember { Animatable(0f) }
+    LaunchedEffect(flash?.key) {
+        val kind = flash?.kind ?: return@LaunchedEffect
+        launch {
+            when (kind) {
+                FlashKind.HIT -> {
+                    punch.snapTo(0.84f)
+                    punch.animateTo(
+                        1f,
+                        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+                    )
+                }
+                FlashKind.HEAL, FlashKind.SHIELD -> {
+                    punch.snapTo(1.1f)
+                    punch.animateTo(1f, tween(durationMillis = 320))
+                }
+            }
+        }
+        washAlpha.snapTo(0.5f)
+        washAlpha.animateTo(0f, tween(durationMillis = 380))
+    }
+    val washColor = when (flash?.kind) {
+        FlashKind.HIT -> Color(0xFFFF5A5A)
+        FlashKind.HEAL -> HpGreen
+        FlashKind.SHIELD -> ShieldBlue
+        null -> Color.Transparent
+    }
+
     val borderColor = when {
         isActing -> Color(0xFFF7F7F7)
         isTargetable -> Accent
@@ -178,9 +236,13 @@ fun UnitCard(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .width(76.dp)
-            .graphicsLayer { scaleX = actingScale; scaleY = actingScale }
+            .graphicsLayer {
+                scaleX = actingScale * punch.value
+                scaleY = actingScale * punch.value
+                translationY = lunge.value
+            }
             .alpha(deadAlpha)
             .combinedClickable(enabled = unit.isAlive, onClick = onClick, onLongClick = onLongClick)
             .semantics { contentDescription = unit.name }
@@ -210,6 +272,14 @@ fun UnitCard(
                     )
                 } else {
                     IconChip(unit.iconId, size = 52)
+                }
+                if (washAlpha.value > 0f) {
+                    Box(
+                        Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(washColor.copy(alpha = washAlpha.value))
+                    )
                 }
             }
             if (unit.shield > 0) {
@@ -335,8 +405,9 @@ fun AbilityButton(
     }
 }
 
-/** The party's shared ultimate meter: one gold bar, filled by everyone's
- *  damage dealt and taken. Full means someone gets to go big. */
+/** The party's shared ultimate meter: one gold bar, filled slowly by
+ *  everyone's damage dealt and taken. When it's full you drag the bar's
+ *  glow onto a hero and they fire their ultimate. */
 @Composable
 fun UltMeterBar(percent: Int, modifier: Modifier = Modifier) {
     val fraction by animateFloatAsState(

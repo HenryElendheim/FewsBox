@@ -45,11 +45,19 @@ Not written yet. Known fixed points:
 
 ## Campaign and progression (shipped)
 
-The campaign is 25 levels on a level-select grid: beat a level to unlock
-the next, replay anything, stars (1-3, by survivors) saved per level.
-Ash guards level 12, Silver guards level 25. Heroes earn XP from wins
-and level 1-5; levels unlock the kit itself (one weapon and two offhands
-at level 1, everything by level 5) plus small HP/ATK growth.
+The campaign is 100 levels on a swipeable level-select board (25 per
+page): beat a level to unlock the next, replay anything, stars (1-3, by
+survivors) saved per level. Every 10th level is a gauntlet of 3-5 stages
+where survivors, statuses and the ult meter carry between waves. Every
+25th level is a boss set piece: Ash at 25, Silver at 50, both together
+at 75, and Gray himself at 100 - a three-stage finale, and the only boss
+who never defects. Beating level 100 opens endless mode: procedurally
+scaled levels that never stop, gauntlets up to 8 stages deep, progress
+measured in distance instead of stars.
+
+Heroes earn XP from performance - damage dealt that level plus 5 for
+surviving - and level 1-5; levels unlock the kit itself (one weapon and
+two offhands at level 1, everything by level 5) plus small HP/ATK growth.
 
 ## Systems backlog
 
@@ -58,14 +66,16 @@ at level 1, everything by level 5) plus small HP/ATK growth.
 - **Modifier slots** - pure functions that rewrite an ability's effect list
   ("+1 hit, -20% per hit", "hits also apply Weaken"). Deepest mixing axis,
   deferred until the base loop is proven fun
-- **Boss fights** - two grayscale bosses live: Ash (battle 8, an AI boss
-  that smothers the party in burn and poison) and Silver (battle 10, the
-  telegraphing finale). Both defect when their battle falls - the unlock
-  system is generalized, so future bosses are one map entry each. Gray
-  remains unbuilt and unbeatable by design
-- **Ultimate balance pass** - ultimates are meter-based now (fill by
-  dealing damage at 2%/point and taking damage at 3%/point, fire at 100%,
-  reset to zero); the gain rates and all seven ults need playtesting
+- **Boss fights** - three grayscale bosses live: Ash (level 25, an AI
+  boss that smothers the party in burn and poison), Silver (level 50, the
+  telegraphing storm), and Gray (level 100, three escalating forms built
+  around Null Wave). Ash and Silver defect when their battles fall - the
+  unlock system is generalized, so future bosses are one map entry each.
+  Gray never joins, by design
+- **Ultimate balance pass** - the shared meter fills 5% per landed
+  attack, 3% per hit taken, 15% when one hit costs over half a hero's max
+  HP; fire at 100% by dragging the bar onto a hero, reset to zero. The
+  rates and all eight ults need playtesting
 - **Weapon balance pass** - every hero has three signature weapons of
   their own now, 21 total; numbers are first drafts
 - **Sound** - hooks exist via the combat event stream, nothing wired yet

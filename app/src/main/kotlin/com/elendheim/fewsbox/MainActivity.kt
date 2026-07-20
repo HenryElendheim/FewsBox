@@ -57,17 +57,20 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
     var roster by remember { mutableStateOf(saved.roster) }
     var selectedIds by remember { mutableStateOf(saved.selectedIds) }
     var unlockedIds by remember { mutableStateOf(saved.unlockedIds) }
+    var endlessBest by remember { mutableIntStateOf(saved.endlessBest) }
+    var battleLevel by remember { mutableIntStateOf(0) }
     var lastStars by remember { mutableIntStateOf(0) }
     var lastResults by remember { mutableStateOf<List<HeroResult>>(emptyList()) }
     var lastUnlockName by remember { mutableStateOf<String?>(null) }
 
     val heroLevels = remember(heroXp) { heroXp.mapValues { Progression.levelFor(it.value) } }
+    val campaignBeaten = (bestStars[Battles.FINAL_BOSS_INDEX] ?: 0) > 0
 
     // Write-through save: any change persists.
-    LaunchedEffect(maxUnlocked, selectedLevel, bestStars, heroXp, roster, selectedIds, unlockedIds) {
+    LaunchedEffect(maxUnlocked, selectedLevel, bestStars, heroXp, roster, selectedIds, unlockedIds, endlessBest) {
         SaveStore.save(
             context, maxUnlocked, selectedLevel, bestStars, heroXp,
-            selectedIds, roster, unlockedIds
+            selectedIds, roster, unlockedIds, endlessBest
         )
     }
 
@@ -94,24 +97,43 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
             },
             onFight = {
                 val party = roster.filter { member -> member.hero.id in selectedIds }
-                vm.startBattle(selectedLevel, party, heroLevels)
+                battleLevel = selectedLevel
+                vm.startLevel(selectedLevel, party, heroLevels)
+                screen = Screen.BATTLE
+            },
+            endlessBest = endlessBest,
+            endlessUnlocked = campaignBeaten,
+            onPlayEndless = {
+                val party = roster.filter { member -> member.hero.id in selectedIds }
+                battleLevel = Battles.CAMPAIGN_LEVELS + endlessBest
+                vm.startLevel(battleLevel, party, heroLevels)
                 screen = Screen.BATTLE
             }
         )
 
         Screen.BATTLE -> BattleScreen(
             vm = vm,
-            onVictory = { survivors ->
-                // Stars: everyone standing is 3, each loss costs one.
-                val partySize = selectedIds.size
-                val stars = (3 - (partySize - survivors)).coerceIn(1, 3)
-                bestStars = bestStars + (selectedLevel to maxOf(bestStars[selectedLevel] ?: 0, stars))
+            onVictory = {
+                val isEndless = battleLevel >= Battles.CAMPAIGN_LEVELS
+                val damageByHero = vm.damageByHero()
+                val survivorIds = vm.survivors()
 
-                // Everyone who fought gets paid; the results screen shows it.
-                val reward = Progression.xpRewardFor(selectedLevel)
+                // Stars: everyone standing is 3, each loss costs one. Endless
+                // runs are about distance, not stars.
+                val stars = if (isEndless) 0 else {
+                    (3 - (selectedIds.size - survivorIds.size)).coerceIn(1, 3)
+                }
+                if (!isEndless) {
+                    bestStars = bestStars + (battleLevel to maxOf(bestStars[battleLevel] ?: 0, stars))
+                }
+
+                // XP is earned, not granted: what you dealt this level, plus
+                // a flat 5 for walking out alive.
                 val oldXp = heroXp
                 heroXp = heroXp.mapValues { (id, xp) ->
-                    if (id in selectedIds) xp + reward else xp
+                    if (id in selectedIds) {
+                        xp + (damageByHero[id] ?: 0) + (if (id in survivorIds) 5 else 0)
+                    } else xp
                 }
                 lastStars = stars
                 lastResults = roster
@@ -124,6 +146,7 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                             name = member.hero.name,
                             iconId = member.hero.iconId,
                             xpGained = after - before,
+                            xpBefore = before,
                             xpAfter = after,
                             levelBefore = Progression.levelFor(before),
                             levelAfter = Progression.levelFor(after)
@@ -132,7 +155,7 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
 
                 // A fallen boss defects and joins the roster.
                 lastUnlockName = null
-                Battles.unlocks[selectedLevel]?.let { heroId ->
+                Battles.unlocks[battleLevel]?.let { heroId ->
                     if (heroId !in unlockedIds) {
                         unlockedIds = unlockedIds + heroId
                         val loadout = Party.loadoutFor(heroId)
@@ -141,10 +164,14 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                     }
                 }
 
-                if (selectedLevel == maxUnlocked && maxUnlocked < Battles.count - 1) {
-                    maxUnlocked++
+                if (isEndless) {
+                    endlessBest = maxOf(endlessBest, battleLevel - Battles.CAMPAIGN_LEVELS + 1)
+                } else {
+                    if (battleLevel == maxUnlocked && maxUnlocked < Battles.count - 1) {
+                        maxUnlocked++
+                    }
+                    if (selectedLevel < maxUnlocked) selectedLevel = minOf(selectedLevel + 1, maxUnlocked)
                 }
-                if (selectedLevel < maxUnlocked) selectedLevel = minOf(selectedLevel + 1, maxUnlocked)
                 screen = Screen.RESULTS
             },
             onDefeat = { screen = Screen.LOADOUT }

@@ -15,6 +15,7 @@ data class Ability(
 
 enum class Targeting {
     SINGLE_ENEMY,
+    HIGHEST_HP_ENEMY,       // auto-aims at the healthiest enemy
     ALL_ENEMIES,
     RANDOM_ENEMY,
     RANDOM_ENEMIES_MULTI,   // multi-hit spread across random valid targets

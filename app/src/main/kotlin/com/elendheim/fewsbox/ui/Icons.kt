@@ -34,6 +34,8 @@ object GameIcons {
         "ic_enemy_hexer" to IconSpec("HX", Color(0xFF6E6E6E)),
         "ic_enemy_silver" to IconSpec("SV", Color(0xFFF7F7F7)),
         "ic_enemy_ash" to IconSpec("AS", Color(0xFFC9C9C9)),
+        "ic_enemy_gray" to IconSpec("GR", Color(0xFF4A4A4A)),
+        "ic_atk_null" to IconSpec("NW", Color(0xFF4A4A4A)),
         "ic_atk_ashcloud" to IconSpec("AC", Color(0xFFC9C9C9)),
         "ic_atk_cinder" to IconSpec("CS", Color(0xFFC9C9C9)),
         "ic_def_ember" to IconSpec("EG", Color(0xFFC9C9C9)),
