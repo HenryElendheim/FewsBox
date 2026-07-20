@@ -211,6 +211,7 @@ fun LoadoutScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LevelGrid(
     maxUnlocked: Int,
