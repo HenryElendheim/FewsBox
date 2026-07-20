@@ -319,6 +319,41 @@ class ResolverTest {
     }
 
     @Test
+    fun `level one gear is always legal and levels open the rest`() {
+        for (hero in Party.ROSTER + Party.UNLOCKABLES) {
+            // Defaults must be reachable on a fresh hero.
+            assertTrue(
+                hero.defaultWeaponId in com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 1),
+                "${hero.name} default weapon locked at level 1"
+            )
+            assertTrue(
+                hero.defaultOffhandId in com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 1),
+                "${hero.name} default offhand locked at level 1"
+            )
+            // Level 1: one weapon, two offhands. Max level: everything.
+            assertEquals(1, com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 1).size)
+            assertEquals(2, com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 1).size)
+            assertEquals(hero.weaponIds, com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 5))
+            assertEquals(hero.offhandIds, com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 5))
+        }
+    }
+
+    @Test
+    fun `hero levels grow stats and xp thresholds climb`() {
+        val p = com.elendheim.fewsbox.data.Progression
+        assertEquals(1, p.levelFor(0))
+        assertEquals(1, p.levelFor(59))
+        assertEquals(2, p.levelFor(60))
+        assertEquals(5, p.levelFor(9999))
+        assertEquals(null, p.xpToNext(9999))
+
+        val fresh = Party.defaultLoadout(Party.RED).toUnit(1)
+        val veteran = Party.defaultLoadout(Party.RED).toUnit(5)
+        assertEquals(fresh.maxHp + 20, veteran.maxHp)
+        assertEquals(fresh.baseAttack + 2, veteran.baseAttack)
+    }
+
+    @Test
     fun `boss unlocks point at real battles and real heroes`() {
         for ((battleIndex, heroId) in com.elendheim.fewsbox.data.Battles.unlocks) {
             assertTrue(battleIndex in 0 until com.elendheim.fewsbox.data.Battles.count)

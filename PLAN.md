@@ -43,6 +43,14 @@ Not written yet. Known fixed points:
 - Defeated grayscale bosses can defect to the party
 - Gray is the mastermind and the one permanent enemy
 
+## Campaign and progression (shipped)
+
+The campaign is 25 levels on a level-select grid: beat a level to unlock
+the next, replay anything, stars (1-3, by survivors) saved per level.
+Ash guards level 12, Silver guards level 25. Heroes earn XP from wins
+and level 1-5; levels unlock the kit itself (one weapon and two offhands
+at level 1, everything by level 5) plus small HP/ATK growth.
+
 ## Systems backlog
 
 - **Fourth party slot** - Party.MAX_SIZE is 3; the code iterates the party

@@ -40,8 +40,13 @@ class BattleViewModel : ViewModel() {
     private var engine: BattleEngine? = null
     private var state: BattleState? = null
 
-    fun startBattle(battleIndex: Int, party: List<Loadout>, seed: Long = System.nanoTime()) {
-        val newState = Battles.create(battleIndex, party)
+    fun startBattle(
+        battleIndex: Int,
+        party: List<Loadout>,
+        heroLevels: Map<String, Int> = emptyMap(),
+        seed: Long = System.nanoTime()
+    ) {
+        val newState = Battles.create(battleIndex, party, heroLevels)
         val newEngine = BattleEngine(Statuses.REGISTRY, Random(seed)) { event ->
             _events.tryEmit(event)
         }

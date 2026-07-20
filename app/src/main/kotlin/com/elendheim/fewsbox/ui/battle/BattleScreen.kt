@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun BattleScreen(
     vm: BattleViewModel,
-    onVictory: () -> Unit,
+    onVictory: (survivors: Int) -> Unit,
     onDefeat: () -> Unit
 ) {
     val snapshot by vm.snapshot.collectAsStateWithLifecycle()
@@ -281,7 +281,7 @@ fun BattleScreen(
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(
-                        onClick = { if (won) onVictory() else onDefeat() },
+                        onClick = { if (won) onVictory(battle.players.size) else onDefeat() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Accent,
                             contentColor = Ink
