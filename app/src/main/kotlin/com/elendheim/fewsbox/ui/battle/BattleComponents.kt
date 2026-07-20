@@ -47,6 +47,7 @@ import com.elendheim.fewsbox.engine.model.ActiveStatus
 import com.elendheim.fewsbox.engine.model.CombatUnit
 import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Ability
+import com.elendheim.fewsbox.engine.ability.Resolver
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.IconChip
 import com.elendheim.fewsbox.ui.theme.Accent
@@ -223,6 +224,20 @@ fun UnitCard(
                     Text("${unit.shield}", color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
                 }
             }
+            // Taunt wears its badge on the other shoulder: gold T, meaning
+            // every enemy attack is coming here.
+            if (unit.hasStatus(Resolver.TAUNT_STATUS_ID)) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .graphicsLayer { translationX = -12f; translationY = -8f }
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(EnergyGold)
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                ) {
+                    Text("T", color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                }
+            }
             Box(
                 Modifier.requiredSize(64.dp),
                 contentAlignment = Alignment.Center
@@ -231,7 +246,10 @@ fun UnitCard(
             }
         }
         HpBar(unit.hp, unit.maxHp, Modifier.width(60.dp).padding(top = 4.dp))
-        StatusRow(unit.statuses, Modifier.padding(top = 3.dp))
+        StatusRow(
+            unit.statuses.filterNot { it.defId == Resolver.TAUNT_STATUS_ID },
+            Modifier.padding(top = 3.dp)
+        )
     }
 }
 
