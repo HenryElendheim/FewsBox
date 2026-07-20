@@ -135,6 +135,25 @@ class Resolver(
                 if (amount > 0) healUnit(actor, amount)
             }
 
+            is Effect.DealFlatDamage -> {
+                if (!target.isAlive) return
+                // Exact damage: target-side modifiers still count, crits never do.
+                var raw = effect.amount.toFloat()
+                raw *= passiveFactor(target, PassiveEffect.DAMAGE_TAKEN_UP, reduces = false)
+                raw *= passiveFactor(target, PassiveEffect.DAMAGE_TAKEN_DOWN, reduces = true)
+                landHit(state, actor, target, raw.roundToInt().coerceAtLeast(1), isCrit = false, ctx)
+            }
+
+            is Effect.HealPercent -> {
+                healUnit(target, (target.maxHp * effect.fraction).roundToInt())
+            }
+
+            is Effect.GrantExtraActions -> {
+                if (!target.isAlive) return
+                state.extraActions[target.id] = (state.extraActions[target.id] ?: 0) + effect.count
+                emit(CombatEvent.ExtraActionsGranted(target.id, effect.count))
+            }
+
             is Effect.GainShield -> {
                 target.shield += effect.amount
                 emit(CombatEvent.ShieldGained(target.id, effect.amount))
@@ -210,7 +229,18 @@ class Resolver(
         val isCrit = canCrit && rng.nextFloat() < CRIT_CHANCE
         if (isCrit) raw *= CRIT_MULTIPLIER
 
-        val amount = raw.roundToInt().coerceAtLeast(1)
+        landHit(state, actor, target, raw.roundToInt().coerceAtLeast(1), isCrit, ctx)
+    }
+
+    /** The landing half of any hit: damage, events, meter gains, thorns. */
+    private fun landHit(
+        state: BattleState,
+        actor: CombatUnit,
+        target: CombatUnit,
+        amount: Int,
+        isCrit: Boolean,
+        ctx: ActionContext
+    ) {
         applyDamage(target, amount)
         ctx.damageDealt += amount
         emit(CombatEvent.DamageDealt(target.id, amount, isCrit))

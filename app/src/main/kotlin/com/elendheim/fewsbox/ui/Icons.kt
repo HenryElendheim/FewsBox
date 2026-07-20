@@ -92,6 +92,7 @@ object GameIcons {
         // Statuses
         "ic_status_burn" to IconSpec("B", Amber),
         "ic_status_poison" to IconSpec("P", HpGreen),
+        "ic_status_scorch" to IconSpec("SC", Amber),
         "ic_status_stun" to IconSpec("Z", EnergyGold),
         "ic_status_weaken" to IconSpec("W", TealDim),
         "ic_status_vulnerable" to IconSpec("V", DangerRed),

@@ -75,6 +75,15 @@ object Statuses {
         timing = StatusTiming.PASSIVE_MODIFIER
     )
 
+    // Inferno's mark: a flat 5 per stack each turn that never fades early.
+    val SCORCH = StatusDef(
+        id = "scorch",
+        iconId = "ic_status_scorch",
+        kind = StatusKind.DEBUFF,
+        timing = StatusTiming.TICK_START_OF_TURN,
+        magnitude = 5
+    )
+
     // Strikes back at attackers: 3 flat damage per stack per hit taken.
     val THORNS = StatusDef(
         id = "thorns",
@@ -85,7 +94,7 @@ object Statuses {
         passive = PassiveEffect.THORNS
     )
 
-    val ALL = listOf(BURN, POISON, STUN, WEAKEN, VULNERABLE, TAUNT, THORNS)
+    val ALL = listOf(BURN, POISON, SCORCH, STUN, WEAKEN, VULNERABLE, TAUNT, THORNS)
     val REGISTRY: Map<String, StatusDef> = ALL.associateBy { it.id }
 }
 
@@ -317,93 +326,87 @@ object Offhands {
 
 object Ultimates {
 
-    // RED — one enormous hit. Simple, honest, terrifying.
-    val BERSERK = Ability(
-        id = "ult_red",
-        iconId = "ic_ult_red",
-        targeting = Targeting.SINGLE_ENEMY,
-        effects = listOf(
-            Effect.DealDamage(multiplier = 2.4f, hits = 1, canCrit = true)
-        )
-    )
+    // Ultimates are built per hero level so numbers can grow. Red's is the
+    // scaling one for now; the rest hold their values at every level.
+    fun forLevel(id: String, level: Int): Ability = when (id) {
 
-    // ORANGE — set the whole enemy line burning.
-    val INFERNO = Ability(
-        id = "ult_orange",
-        iconId = "ic_ult_orange",
-        targeting = Targeting.ALL_ENEMIES,
-        effects = listOf(
-            Effect.DealDamage(multiplier = 0.5f, hits = 1, canCrit = false),
-            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3)
+        // RED - one colossal, exact hit. No dice. Grows with his level.
+        "ult_red" -> Ability(
+            id = "ult_red", iconId = "ic_ult_red",
+            targeting = Targeting.SINGLE_ENEMY,
+            effects = listOf(Effect.DealFlatDamage(amount = 50 + 10 * (level - 1)))
         )
-    )
 
-    // YELLOW — heal everyone.
-    val SUNBURST = Ability(
-        id = "ult_yellow",
-        iconId = "ic_ult_yellow",
-        targeting = Targeting.ALL_ALLIES,
-        effects = listOf(
-            Effect.Heal(amount = 10)
+        // ORANGE - 20 exact damage to everyone and a scorch that burns a
+        // flat 10 per turn for 4 turns without fading.
+        "ult_orange" -> Ability(
+            id = "ult_orange", iconId = "ic_ult_orange",
+            targeting = Targeting.ALL_ENEMIES,
+            effects = listOf(
+                Effect.DealFlatDamage(amount = 20),
+                Effect.ApplyStatus(statusId = "scorch", stacks = 2, duration = 4)
+            )
         )
-    )
 
-    // GREEN — five blades everywhere.
-    val RAZOR_STORM = Ability(
-        id = "ult_green",
-        iconId = "ic_ult_green",
-        targeting = Targeting.RANDOM_ENEMIES_MULTI,
-        effects = listOf(
-            Effect.DealDamage(multiplier = 0.6f, hits = 5, canCrit = true)
+        // YELLOW - the whole party back to 80% of max from wherever they are.
+        "ult_yellow" -> Ability(
+            id = "ult_yellow", iconId = "ic_ult_yellow",
+            targeting = Targeting.ALL_ALLIES,
+            effects = listOf(Effect.HealPercent(fraction = 0.8f))
         )
-    )
 
-    // BLUE — shield the whole party.
-    val PHALANX = Ability(
-        id = "ult_blue",
-        iconId = "ic_ult_blue",
-        targeting = Targeting.ALL_ALLIES,
-        effects = listOf(
-            Effect.GainShield(amount = 8)
+        // GREEN - time itself: everyone gets two extra turns this round.
+        "ult_green" -> Ability(
+            id = "ult_green", iconId = "ic_ult_green",
+            targeting = Targeting.ALL_ALLIES,
+            effects = listOf(Effect.GrantExtraActions(count = 2))
         )
-    )
 
-    // VIOLET — a hit that stuns. The reliable Lockdown button, gated hard.
-    val TERROR = Ability(
-        id = "ult_violet",
-        iconId = "ic_ult_violet",
-        targeting = Targeting.SINGLE_ENEMY,
-        effects = listOf(
-            Effect.DealDamage(multiplier = 0.8f, hits = 1, canCrit = false),
-            Effect.ApplyStatus(statusId = "stun", stacks = 1, duration = 1)
+        // BLUE - a wall for the whole party.
+        "ult_blue" -> Ability(
+            id = "ult_blue", iconId = "ic_ult_blue",
+            targeting = Targeting.ALL_ALLIES,
+            effects = listOf(Effect.GainShield(amount = 40))
         )
-    )
 
-    // SILVER — the boss's storm, in your hands once earned. Slightly tuned
-    // down from the enemy version.
-    val TEMPEST = Ability(
-        id = "ult_silver",
-        iconId = "ic_ult_silver",
-        targeting = Targeting.ALL_ENEMIES,
-        effects = listOf(
-            Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = false),
-            Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)
+        // VIOLET - 10 exact damage and the whole enemy line frozen two turns.
+        "ult_violet" -> Ability(
+            id = "ult_violet", iconId = "ic_ult_violet",
+            targeting = Targeting.ALL_ENEMIES,
+            effects = listOf(
+                Effect.DealFlatDamage(amount = 10),
+                Effect.ApplyStatus(statusId = "stun", stacks = 2, duration = 2)
+            )
         )
-    )
 
-    // ASH — no burst at all: everything just starts dying slowly.
-    val ASHFALL = Ability(
-        id = "ult_ash",
-        iconId = "ic_ult_ash",
-        targeting = Targeting.ALL_ENEMIES,
-        effects = listOf(
-            Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3),
-            Effect.ApplyStatus(statusId = "poison", stacks = 2, duration = 3)
+        // ASH - no burst at all: everything just starts dying slowly.
+        "ult_ash" -> Ability(
+            id = "ult_ash", iconId = "ic_ult_ash",
+            targeting = Targeting.ALL_ENEMIES,
+            effects = listOf(
+                Effect.ApplyStatus(statusId = "burn", stacks = 2, duration = 3),
+                Effect.ApplyStatus(statusId = "poison", stacks = 2, duration = 3)
+            )
         )
-    )
 
-    val ALL = listOf(BERSERK, INFERNO, SUNBURST, RAZOR_STORM, PHALANX, TERROR, ASHFALL, TEMPEST)
-    val REGISTRY: Map<String, Ability> = ALL.associateBy { it.id }
+        // SILVER - the boss's storm, in your hands once earned.
+        "ult_silver" -> Ability(
+            id = "ult_silver", iconId = "ic_ult_silver",
+            targeting = Targeting.ALL_ENEMIES,
+            effects = listOf(
+                Effect.DealDamage(multiplier = 0.9f, hits = 1, canCrit = false),
+                Effect.ApplyStatus(statusId = "weaken", stacks = 1, duration = 2)
+            )
+        )
+
+        else -> error("unknown ultimate $id")
+    }
+
+    val IDS = listOf(
+        "ult_red", "ult_orange", "ult_yellow", "ult_green",
+        "ult_blue", "ult_violet", "ult_ash", "ult_silver"
+    )
+    val REGISTRY: Map<String, Ability> = IDS.associateWith { forLevel(it, 1) }
 }
 
 // ----------------------------------------------------------------------------

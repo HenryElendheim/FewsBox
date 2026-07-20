@@ -21,6 +21,7 @@ sealed class CombatEvent {
     data class UnitDied(val unitId: String) : CombatEvent()
     data class RoundStarted(val round: Int) : CombatEvent()
     data class UltChargeChanged(val percent: Int) : CombatEvent()
+    data class ExtraActionsGranted(val unitId: String, val count: Int) : CombatEvent()
     data object BattleWon : CombatEvent()
     data object BattleLost : CombatEvent()
 }

@@ -279,7 +279,7 @@ private fun LevelGrid(
 private fun heroInfo(member: Loadout, level: Int): InfoContent {
     val attack = member.hero.baseAttack + Progression.bonusAttack(level) + member.weapon.attackBonus
     val hp = member.hero.maxHp + Progression.bonusHp(level)
-    val ultimate = Ultimates.REGISTRY.getValue(member.hero.ultimateId)
+    val ultimate = Ultimates.forLevel(member.hero.ultimateId, level)
     return InfoContent(
         title = "${member.hero.name}  LV $level",
         subtitle = "HP $hp · ATK $attack with ${GameText.name(member.weapon.id)}",

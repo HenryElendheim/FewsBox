@@ -25,10 +25,19 @@ sealed class Effect {
     /** Heal the attacker for a fraction of damage dealt so far this action. */
     data class Lifesteal(val fraction: Float) : Effect()
 
+    /** Exact damage: ignores attack, never crits. Ultimate material. */
+    data class DealFlatDamage(val amount: Int) : Effect()
+
     // --- Defense / utility ---
 
     data class GainShield(val amount: Int) : Effect()
     data class Heal(val amount: Int) : Effect()
+
+    /** Heal for a fraction of the target's max health. */
+    data class HealPercent(val fraction: Float) : Effect()
+
+    /** Give the target extra actions this round, spendable even after acting. */
+    data class GrantExtraActions(val count: Int) : Effect()
     data class Taunt(val turns: Int) : Effect()
     data object Cleanse : Effect()
 

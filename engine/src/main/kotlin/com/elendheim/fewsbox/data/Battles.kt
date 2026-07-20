@@ -149,7 +149,7 @@ fun Loadout.toUnit(level: Int = 1): CombatUnit {
         hp = hp,
         team = Team.PLAYER,
         baseAttack = hero.baseAttack + Progression.bonusAttack(level) + weapon.attackBonus,
-        abilities = buildAbilities(weapon, offhand, extra = listOf(Ultimates.REGISTRY.getValue(hero.ultimateId))),
+        abilities = buildAbilities(weapon, offhand, extra = listOf(Ultimates.forLevel(hero.ultimateId, level))),
         ultimateId = hero.ultimateId
     )
 }

@@ -53,7 +53,7 @@ class BattleEngine(
         // whether the hero already acted and don't spend the hero's turn.
         val isUltimate = ability.id == actor.ultimateId
         if (isUltimate && !state.partyUltReady) return false
-        if (!isUltimate && actor.id in state.actedThisRound) return false
+        if (!isUltimate && state.actionsLeft(actor) <= 0) return false
 
         if (ability.cooldown > 0) actor.cooldowns[ability.id] = ability.cooldown
 
@@ -63,7 +63,7 @@ class BattleEngine(
             state.partyUltCharge = 0
             emit(CombatEvent.UltChargeChanged(0))
         } else {
-            state.actedThisRound.add(actor.id)
+            state.spendAction(actor.id)
         }
         if (!checkBattleEnd(state)) state.phase = TurnPhase.PLAYER_INPUT
         return true
@@ -169,7 +169,8 @@ class BattleEngine(
     }
 
     private fun startNextRound(state: BattleState) {
-        state.actedThisRound.clear()
+        state.actionsTaken.clear()
+        state.extraActions.clear()
         emit(CombatEvent.RoundStarted(state.round))
         state.phase = TurnPhase.PLAYER_INPUT
         tickPlayerPhaseStart(state)
@@ -183,7 +184,7 @@ class BattleEngine(
             tickStartOfTurnStatuses(state, player)
             if (checkBattleEnd(state)) return
             if (player.isAlive && consumeStunIfPresent(player)) {
-                state.actedThisRound.add(player.id)
+                state.spendAction(player.id)
             }
         }
     }
@@ -228,9 +229,12 @@ class BattleEngine(
     }
 
     private fun consumeStunIfPresent(unit: CombatUnit): Boolean {
-        if (!unit.hasStatus(STUN_STATUS_ID)) return false
-        unit.statuses.removeAll { it.defId == STUN_STATUS_ID }
-        emit(CombatEvent.StatusExpired(unit.id, STUN_STATUS_ID))
+        val stun = unit.statuses.firstOrNull { it.defId == STUN_STATUS_ID } ?: return false
+        stun.stacks--
+        if (stun.stacks <= 0) {
+            unit.statuses.remove(stun)
+            emit(CombatEvent.StatusExpired(unit.id, STUN_STATUS_ID))
+        }
         emit(CombatEvent.TurnSkipped(unit.id))
         // Stunning a charging elite resets the wind-up. This is what makes
         // the Lockdown play real: deny the big hit, not just delay it.

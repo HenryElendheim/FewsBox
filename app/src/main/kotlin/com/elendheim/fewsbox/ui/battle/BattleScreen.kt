@@ -66,6 +66,7 @@ fun BattleScreen(
 
     var selectedAbilityId by remember { mutableStateOf<String?>(null) }
     var activeActorId by remember { mutableStateOf<String?>(null) }
+    var actingUnitId by remember { mutableStateOf<String?>(null) }
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
     // Event-driven feedback: floating numbers, status announcements and
@@ -102,6 +103,14 @@ fun BattleScreen(
         }
         vm.events.collect { event ->
             when (event) {
+                // Spotlight whoever is acting so enemy turns read clearly.
+                is CombatEvent.AbilityUsed -> {
+                    actingUnitId = event.actorId
+                    launch {
+                        delay(650)
+                        if (actingUnitId == event.actorId) actingUnitId = null
+                    }
+                }
                 is CombatEvent.DamageDealt -> {
                     addFloaty(event.targetId, "-${event.amount}", if (event.isCrit) EnergyGold else Accent)
                     // Big hits and crits rattle the whole screen.
@@ -119,6 +128,8 @@ fun BattleScreen(
                 is CombatEvent.StatusConsumed ->
                     addFloaty(event.targetId, "${GameText.name(event.statusId).uppercase()} BURST",
                         statusColor(event.statusId), label = true)
+                is CombatEvent.ExtraActionsGranted ->
+                    addFloaty(event.unitId, "+${event.count} TURNS", EnergyGold, label = true)
                 is CombatEvent.TurnSkipped ->
                     addFloaty(event.unitId, "STUNNED", statusColor("stun"), label = true)
                 is CombatEvent.ChargeFired ->
@@ -177,6 +188,7 @@ fun BattleScreen(
                         unit = enemy,
                         isTargetable = targetable,
                         isActiveActor = false,
+                        isActing = enemy.id == actingUnitId,
                         floaties = floaties[enemy.id] ?: emptyList(),
                         onClick = { if (targetable) useAbilityOn(enemy.id) },
                         onLongClick = { info = GameText.unitInfo(enemy) }
@@ -219,11 +231,11 @@ fun BattleScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (activeActor != null) {
-                    val actorActed = activeActor.id in battle.actedThisRound
+                    val actorSpent = battle.actionsLeft(activeActor) <= 0
                     for (ability in activeActor.abilities) {
                         val isUltimate = ability.id == activeActor.ultimateId
                         val usable = activeActor.cooldownLeft(ability.id) == 0 &&
-                            if (isUltimate) battle.partyUltReady else !actorActed
+                            if (isUltimate) battle.partyUltReady else !actorSpent
                         AbilityButton(
                             ability = ability,
                             selected = ability.id == selectedAbilityId,

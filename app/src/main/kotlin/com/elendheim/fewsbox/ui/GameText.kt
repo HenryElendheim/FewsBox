@@ -87,6 +87,7 @@ object GameText {
         // Statuses
         "burn" to "Burn",
         "poison" to "Poison",
+        "scorch" to "Scorch",
         "stun" to "Stun",
         "weaken" to "Weaken",
         "vulnerable" to "Vulnerable",
@@ -97,7 +98,8 @@ object GameText {
     private val statusBlurbs = mapOf(
         "burn" to "takes 3 damage per stack at the start of its turn, fades 1 stack per turn",
         "poison" to "takes 2 damage per stack at the start of its turn, holds until it expires",
-        "stun" to "skips its next turn; stunning a charging elite resets the wind-up",
+        "stun" to "skips one turn per stack; stunning a charging elite resets the wind-up",
+        "scorch" to "burns for a flat 5 per stack at the start of its turn and never fades early",
         "weaken" to "deals 30% less damage",
         "vulnerable" to "takes 25% more damage",
         "taunt" to "enemies are forced to attack this unit",
@@ -174,6 +176,12 @@ object GameText {
             val pct = (effect.hpThreshold * 100).roundToInt()
             "Hits for $normal damage, or $boosted below $pct% health"
         }
+
+        is Effect.DealFlatDamage -> "Hits for exactly ${effect.amount} damage, no crits"
+
+        is Effect.HealPercent -> "Restores ${(effect.fraction * 100).roundToInt()}% of max health"
+
+        is Effect.GrantExtraActions -> "Grants ${effect.count} extra turns this round"
 
         is Effect.Lifesteal -> {
             val pct = (effect.fraction * 100).roundToInt()

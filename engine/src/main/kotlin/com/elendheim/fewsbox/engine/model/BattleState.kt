@@ -4,7 +4,10 @@ data class BattleState(
     val units: List<CombatUnit>,
     var round: Int = 1,
     var phase: TurnPhase = TurnPhase.PLAYER_INPUT,
-    val actedThisRound: MutableSet<String> = mutableSetOf(),
+    // Actions are counted, not flagged: heroes get one per round plus any
+    // extras granted mid-round (Green's ultimate hands out two each).
+    val actionsTaken: MutableMap<String, Int> = mutableMapOf(),
+    val extraActions: MutableMap<String, Int> = mutableMapOf(),
     // Enemies waiting to act this enemy phase; lets the UI step through
     // one turn at a time and pace the round.
     val enemyQueue: MutableList<String> = mutableListOf(),
@@ -22,8 +25,15 @@ data class BattleState(
     fun unit(id: String): CombatUnit = units.first { it.id == id }
     fun unitOrNull(id: String): CombatUnit? = units.firstOrNull { it.id == id }
 
+    fun actionsLeft(unit: CombatUnit): Int =
+        1 + (extraActions[unit.id] ?: 0) - (actionsTaken[unit.id] ?: 0)
+
+    fun spendAction(unitId: String) {
+        actionsTaken[unitId] = (actionsTaken[unitId] ?: 0) + 1
+    }
+
     /** Living player units that still get to act this round. */
-    val pendingPlayers get() = players.filter { it.id !in actedThisRound }
+    val pendingPlayers get() = players.filter { actionsLeft(it) > 0 }
 }
 
 enum class TurnPhase { PLAYER_INPUT, RESOLVING, ENEMY_TURN, BATTLE_OVER }

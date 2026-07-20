@@ -75,6 +75,55 @@ class BattleEngineTest {
     }
 
     @Test
+    fun `extra actions let a hero act again in the same round`() {
+        val rec = Recorder()
+        val player = unit("p", Team.PLAYER, abilities = listOf(plainHit(0.5f)))
+        val enemy = unit("e", Team.ENEMY, hp = 500)
+        val state = battle(player, enemy)
+        val eng = engine(rec)
+        eng.startBattle(state)
+
+        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+        assertFalse(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+
+        // Green's ultimate does this via Effect.GrantExtraActions.
+        state.extraActions["p"] = 2
+        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+        assertFalse(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+
+        // Extras vanish with the round.
+        eng.finishRound(state)
+        assertTrue(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+        assertFalse(eng.playerAction(state, "p", player.abilities[0].id, listOf("e")))
+    }
+
+    @Test
+    fun `two stun stacks skip two turns`() {
+        val rec = Recorder()
+        val doubleStun = Ability(
+            id = "terror", iconId = "x", targeting = Targeting.SINGLE_ENEMY,
+            effects = listOf(Effect.ApplyStatus("stun", stacks = 2, duration = 2))
+        )
+        val player = unit("p", Team.PLAYER, hp = 200, abilities = listOf(doubleStun))
+        val enemy = unit("e", Team.ENEMY, hp = 100, attack = 10,
+            abilities = listOf(slash()), aiProfile = slashProfile())
+        val state = battle(player, enemy)
+        val eng = engine(rec)
+        eng.startBattle(state)
+
+        eng.playerAction(state, "p", "terror", listOf("e"))
+        eng.finishRound(state)
+        assertEquals(200, player.hp)
+        eng.finishRound(state)
+        assertEquals(200, player.hp)
+        assertEquals(2, rec.all<CombatEvent.TurnSkipped>().size)
+
+        eng.finishRound(state)
+        assertEquals(190, player.hp) // both stacks spent, enemy swings again
+    }
+
+    @Test
     fun `action is refused on cooldown or when already acted`() {
         val rec = Recorder()
         val onCd = plainHit(2.0f).copy(cooldown = 2)
@@ -304,7 +353,7 @@ class BattleEngineTest {
                     if (usable != null) {
                         eng.playerAction(state, p.id, usable.id, listOf(target.id))
                     } else {
-                        state.actedThisRound.add(p.id) // nothing usable: pass
+                        state.spendAction(p.id) // nothing usable: pass
                     }
                     if (state.phase == TurnPhase.BATTLE_OVER) break
                 }

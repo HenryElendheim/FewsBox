@@ -153,16 +153,23 @@ fun UnitCard(
     unit: CombatUnit,
     isTargetable: Boolean,
     isActiveActor: Boolean,
+    isActing: Boolean = false,   // this unit's move is playing out right now
     floaties: List<Floaty>,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
+    val actingScale by animateFloatAsState(
+        targetValue = if (isActing) 1.14f else 1f,
+        animationSpec = tween(durationMillis = 150),
+        label = "actingScale"
+    )
     val deadAlpha by animateFloatAsState(
         targetValue = if (unit.isAlive) 1f else 0.18f,
         animationSpec = tween(durationMillis = 500),
         label = "death"
     )
     val borderColor = when {
+        isActing -> Color(0xFFF7F7F7)
         isTargetable -> Accent
         isActiveActor -> EnergyGold
         else -> Color.Transparent
@@ -172,6 +179,7 @@ fun UnitCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(76.dp)
+            .graphicsLayer { scaleX = actingScale; scaleY = actingScale }
             .alpha(deadAlpha)
             .combinedClickable(enabled = unit.isAlive, onClick = onClick, onLongClick = onLongClick)
             .semantics { contentDescription = unit.name }
