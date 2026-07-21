@@ -59,9 +59,14 @@ Heroes earn XP from performance - damage dealt that level plus 5 for
 surviving - and level 1-5; levels unlock the kit itself (one weapon and
 two offhands at level 1, everything by level 5) plus small HP/ATK growth.
 
-## Kit overhaul (designing, not built yet)
+## Kit overhaul (shipped in v2.0)
 
-The next big drop. Decisions locked so far:
+All of it is live: five weapons and five offhands per color, team-only
+offhands, the Red-only start with the unlock ladder, hero levels capped
+at 50 as pure stat growth, and the fews economy - 15 a star (20 for the
+third on a first clear), an armory and workshop in the shop, and battle
+consumables. The wardrobe and archive pages stand as under-construction
+storefronts. Decisions that shaped it:
 
 - **Unlock ladder** - you start with Red alone and earn the roster in
   order: Orange, Yellow, Green and Blue through the early campaign
