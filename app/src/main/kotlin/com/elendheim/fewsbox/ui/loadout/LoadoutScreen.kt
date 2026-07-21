@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.elendheim.fewsbox.data.Battles
 import com.elendheim.fewsbox.data.Loadout
+import com.elendheim.fewsbox.engine.ability.Effect
+import kotlin.math.roundToInt
 import com.elendheim.fewsbox.data.Offhands
 import com.elendheim.fewsbox.data.Party
 import com.elendheim.fewsbox.data.Progression
@@ -88,7 +90,8 @@ fun LoadoutScreen(
     fews: Int = 0,
     ownedGear: Set<String> = emptySet(),
     onOpenShop: () -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    onOpenEquipment: () -> Unit = {}
 ) {
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
@@ -243,19 +246,56 @@ fun LoadoutScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // The hub stays clean: name, level, health, and what one swing
+            // of the equipped weapon actually does. Gear lives on its own page.
             for (member in roster.filter { it.hero.id in selectedIds }) {
-                HeroLoadoutCard(
-                    member = member,
-                    level = heroLevels[member.hero.id] ?: 1,
-                    xp = heroXp[member.hero.id] ?: 0,
-                    ownedGear = ownedGear,
-                    onLoadoutChange = onLoadoutChange,
-                    onInfo = { info = it }
-                )
-                Spacer(Modifier.height(14.dp))
+                val level = heroLevels[member.hero.id] ?: 1
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Panel)
+                        .combinedClickable(
+                            onClick = onOpenEquipment,
+                            onLongClick = { info = heroInfo(member, level) }
+                        )
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(GameIcons.heroColor(member.hero.iconId) ?: Accent)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(member.hero.name, color = TextBright, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("LV $level", color = HpGreen, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+                        Text(
+                            "HP ${member.hero.maxHp + Progression.bonusHp(level)} · " +
+                                "${GameText.name(member.weapon.id).uppercase()} HITS ${weaponDamage(member, level)}",
+                            color = TextMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = onOpenEquipment,
+                colors = ButtonDefaults.buttonColors(containerColor = PanelRaised, contentColor = TextBright),
+                modifier = Modifier.fillMaxWidth().height(44.dp)
+            ) {
+                Text("EQUIPMENT", fontWeight = FontWeight.Black, fontSize = 13.sp, letterSpacing = 3.sp)
+            }
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = onFight,
                 enabled = selectedIds.isNotEmpty(),
@@ -386,7 +426,24 @@ private fun LevelPage(
     }
 }
 
-private fun heroInfo(member: Loadout, level: Int): InfoContent {
+/** One swing of the equipped weapon, as the number it actually lands. */
+private fun weaponDamage(member: Loadout, level: Int): String {
+    val attack = member.hero.baseAttack + Progression.bonusAttack(level) + member.weapon.attackBonus
+    for (effect in member.weapon.grantedAbility.effects) {
+        when (effect) {
+            is Effect.DealDamage -> {
+                val per = (attack * effect.multiplier).roundToInt()
+                return if (effect.hits > 1) "${effect.hits} x $per" else "$per"
+            }
+            is Effect.ScalingStrike -> return "${(attack * effect.multiplier).roundToInt()}+"
+            is Effect.CascadeDamage -> return "${(attack * effect.multiplier).roundToInt()}"
+            else -> {}
+        }
+    }
+    return "$attack"
+}
+
+internal fun heroInfo(member: Loadout, level: Int): InfoContent {
     val attack = member.hero.baseAttack + Progression.bonusAttack(level) + member.weapon.attackBonus
     val hp = member.hero.maxHp + Progression.bonusHp(level)
     val ultimate = Ultimates.forLevel(member.hero.ultimateId, level)
@@ -404,149 +461,4 @@ private fun heroInfo(member: Loadout, level: Int): InfoContent {
             addAll(GameText.describeAbility(ultimate, attack, isUltimate = true).map { "  $it" })
         }
     )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun HeroLoadoutCard(
-    member: Loadout,
-    level: Int,
-    xp: Int,
-    ownedGear: Set<String>,
-    onLoadoutChange: (Loadout) -> Unit,
-    onInfo: (InfoContent) -> Unit
-) {
-    fun owns(id: String) =
-        id == member.hero.defaultWeaponId || id == member.hero.defaultOffhandId || id in ownedGear
-    val attack = member.hero.baseAttack + Progression.bonusAttack(level) + member.weapon.attackBonus
-    val hp = member.hero.maxHp + Progression.bonusHp(level)
-    val toNext = Progression.xpToNext(xp)
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Panel)
-            .padding(14.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.combinedClickable(
-                onClick = {},
-                onLongClick = { onInfo(heroInfo(member, level)) }
-            )
-        ) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(GameIcons.heroColor(member.hero.iconId) ?: Accent)
-            )
-            Spacer(Modifier.size(10.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(member.hero.name, color = TextBright, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "LV $level",
-                        color = HpGreen,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StatPip("HP $hp")
-                    StatPip("ATK $attack")
-                    StatPip(if (toNext != null) "$toNext XP TO LV ${level + 1}" else "MAX LEVEL")
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-        GatedPickerRow(
-            allIds = member.hero.weaponIds,
-            unlockedIds = member.hero.weaponIds.filter { owns(it) },
-            iconFor = { Weapons.REGISTRY.getValue(it).iconId },
-            selectedId = member.weapon.id,
-            onPick = { id -> onLoadoutChange(member.copy(weapon = Weapons.REGISTRY.getValue(id))) },
-            onHold = { id, unlocked ->
-                val weapon = Weapons.REGISTRY.getValue(id)
-                onInfo(
-                    InfoContent(
-                        title = GameText.name(id),
-                        subtitle = if (unlocked) {
-                            "Weapon" + if (weapon.attackBonus > 0) " · +${weapon.attackBonus} ATK" else ""
-                        } else "Weapon · ${Shop.WEAPON_PRICE} fews in the shop",
-                        lines = listOf(GameText.weaponBlurb(id)) +
-                            GameText.describeAbility(
-                                weapon.grantedAbility,
-                                member.hero.baseAttack + Progression.bonusAttack(level) + weapon.attackBonus
-                            )
-                    )
-                )
-            }
-        )
-        Spacer(Modifier.height(8.dp))
-        GatedPickerRow(
-            allIds = member.hero.offhandIds,
-            unlockedIds = member.hero.offhandIds.filter { owns(it) },
-            iconFor = { Offhands.REGISTRY.getValue(it).iconId },
-            selectedId = member.offhand.id,
-            onPick = { id -> onLoadoutChange(member.copy(offhand = Offhands.REGISTRY.getValue(id))) },
-            onHold = { id, unlocked ->
-                val offhand = Offhands.REGISTRY.getValue(id)
-                onInfo(
-                    InfoContent(
-                        title = GameText.name(id),
-                        subtitle = if (unlocked) "Offhand" else "Offhand · ${Shop.OFFHAND_PRICE} fews in the shop",
-                        lines = listOf(GameText.offhandBlurb(id)) +
-                            GameText.describeAbility(offhand.grantedAbility, attack)
-                    )
-                )
-            }
-        )
-    }
-}
-
-@Composable
-private fun StatPip(text: String) {
-    Text(text, color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun GatedPickerRow(
-    allIds: List<String>,
-    unlockedIds: List<String>,
-    iconFor: (String) -> String,
-    selectedId: String,
-    onPick: (String) -> Unit,
-    onHold: (id: String, unlocked: Boolean) -> Unit
-) {
-    Row(
-        Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        for (id in allIds) {
-            val unlocked = id in unlockedIds
-            val selected = id == selectedId
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(
-                        2.dp,
-                        if (selected) EnergyGold else Color.Transparent,
-                        RoundedCornerShape(12.dp)
-                    )
-                    .alpha(if (unlocked) 1f else 0.3f)
-                    .combinedClickable(
-                        onClick = { if (unlocked) onPick(id) },
-                        onLongClick = { onHold(id, unlocked) }
-                    )
-                    .padding(3.dp)
-            ) {
-                IconChip(iconFor(id), size = 44)
-            }
-        }
-    }
 }

@@ -25,6 +25,7 @@ import com.elendheim.fewsbox.ui.SaveStore
 import com.elendheim.fewsbox.ui.settings.SettingsScreen
 import com.elendheim.fewsbox.ui.battle.BattleScreen
 import com.elendheim.fewsbox.ui.battle.BattleViewModel
+import com.elendheim.fewsbox.ui.loadout.EquipmentScreen
 import com.elendheim.fewsbox.ui.loadout.LoadoutScreen
 import com.elendheim.fewsbox.ui.results.HeroResult
 import com.elendheim.fewsbox.ui.results.ResultsScreen
@@ -46,7 +47,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { LOADOUT, BATTLE, RESULTS, SHOP, SETTINGS }
+private enum class Screen { LOADOUT, BATTLE, RESULTS, SHOP, SETTINGS, EQUIPMENT }
 
 @Composable
 fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
@@ -141,7 +142,19 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                 }
                 screen = Screen.SHOP
             },
-            onOpenSettings = { screen = Screen.SETTINGS }
+            onOpenSettings = { screen = Screen.SETTINGS },
+            onOpenEquipment = { screen = Screen.EQUIPMENT }
+        )
+
+        Screen.EQUIPMENT -> EquipmentScreen(
+            roster = roster,
+            heroLevels = heroLevels,
+            heroXp = heroXp,
+            ownedGear = ownedGear,
+            onLoadoutChange = { changed: Loadout ->
+                roster = roster.map { if (it.hero.id == changed.hero.id) changed else it }
+            },
+            onBack = { screen = Screen.LOADOUT }
         )
 
         Screen.SETTINGS -> SettingsScreen(
