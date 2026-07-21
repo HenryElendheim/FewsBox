@@ -475,6 +475,23 @@ fun UnitCard(
                     modifier = Modifier.size(64.dp)
                 )
             }
+            // A hero's weapon rides BEHIND the body: declared before the
+            // block so the block overlaps the grip and nothing floats.
+            val weaponArt = GameArt[unit.abilities.getOrNull(0)?.iconId]
+            if (weaponArt != null && GameIcons.heroColor(unit.iconId) != null) {
+                Image(
+                    painter = painterResource(weaponArt),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .requiredSize(38.dp)
+                        .graphicsLayer {
+                            translationX = with(this) { 23.dp.toPx() }
+                            translationY = with(this) { 4.dp.toPx() }
+                            rotationZ = if (isActing) -14f else 0f
+                        }
+                )
+            }
             val heroColor = GameIcons.heroColor(unit.iconId)
             Box(
                 modifier = Modifier
@@ -501,25 +518,6 @@ fun UnitCard(
                             .background(washColor.copy(alpha = washAlpha.value))
                     )
                 }
-            }
-            // A hero with drawn weapon art holds it: grip anchored at the
-            // block's shoulder, blade pointing up and out at the enemy line.
-            val weaponArt = GameArt[unit.abilities.getOrNull(0)?.iconId]
-            if (weaponArt != null && GameIcons.heroColor(unit.iconId) != null) {
-                Image(
-                    painter = painterResource(weaponArt),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .requiredSize(38.dp)
-                        .graphicsLayer {
-                            // Held at the side: grip by the hip, only the
-                            // tip peeking over the shoulder.
-                            translationX = with(this) { 10.dp.toPx() }
-                            translationY = with(this) { 8.dp.toPx() }
-                            rotationZ = if (isActing) -14f else 0f
-                        }
-                )
             }
             if (unit.shield > 0) {
                 Box(
