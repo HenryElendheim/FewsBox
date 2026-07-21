@@ -540,23 +540,13 @@ fun BattleScreen(
                     .background(Color(0x9914141A)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "STAGE ${snapshot.stage + 1} CLEAR",
-                        color = HpGreen,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 3.sp
-                    )
-                    Text(
-                        "NEXT WAVE INCOMING",
-                        color = TextBright,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+                Text(
+                    "STAGE ${(snapshot.stage + 2).coerceAtMost(snapshot.stageCount)} OUT OF ${snapshot.stageCount}",
+                    color = TextBright,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 3.sp
+                )
             }
         }
 
