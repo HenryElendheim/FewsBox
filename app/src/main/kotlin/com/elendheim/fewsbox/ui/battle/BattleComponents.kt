@@ -513,8 +513,10 @@ fun UnitCard(
                         .align(Alignment.TopEnd)
                         .requiredSize(38.dp)
                         .graphicsLayer {
-                            translationX = 26f
-                            translationY = -20f
+                            // Grip meets the block's top-right corner; the
+                            // blade clears the head instead of covering it.
+                            translationX = with(this) { 13.dp.toPx() }
+                            translationY = with(this) { (-12).dp.toPx() }
                             rotationZ = if (isActing) -14f else 0f
                         }
                 )
