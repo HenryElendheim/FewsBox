@@ -1,7 +1,9 @@
 package com.elendheim.fewsbox.engine
 
+import com.elendheim.fewsbox.data.Offhands
 import com.elendheim.fewsbox.data.Party
 import com.elendheim.fewsbox.data.Statuses
+import com.elendheim.fewsbox.data.Weapons
 import com.elendheim.fewsbox.data.toUnit
 import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Condition
@@ -185,11 +187,11 @@ class ResolverTest {
         val r = resolver(rec)
 
         r.addStatus(attacker, "weaken", 1, 2)     // -30% out
-        r.addStatus(target, "vulnerable", 1, 2)   // +25% in
+        r.addStatus(target, "vulnerable", 1, 2)   // +15% in
         r.resolve(state, attacker, plainHit(1.0f), listOf("t"))
 
-        // 10 * 0.7 * 1.25 = 8.75 -> 9
-        assertEquals(9, rec.all<CombatEvent.DamageDealt>().single().amount)
+        // 10 * 0.7 * 1.15 = 8.05 -> 8
+        assertEquals(8, rec.all<CombatEvent.DamageDealt>().single().amount)
     }
 
     // ------------------------------------------------------------------
@@ -298,59 +300,56 @@ class ResolverTest {
 
     @Test
     fun `every hero kit carries its meter-gated ultimate and own weapons`() {
-        for (loadout in Party.rosterDefaults()) {
-            val unit = loadout.toUnit()
-            assertEquals(3, unit.abilities.size, "${loadout.hero.name} kit size")
+        val rainbow = listOf(Party.RED, Party.ORANGE, Party.YELLOW, Party.GREEN, Party.BLUE, Party.VIOLET)
+        for (hero in Party.ROSTER + Party.UNLOCKABLES) {
+            val unit = Party.defaultLoadout(hero).toUnit()
+            assertEquals(3, unit.abilities.size, "${hero.name} kit size")
             assertTrue(
-                unit.abilities.any { it.id == loadout.hero.ultimateId },
-                "${loadout.hero.name} missing ultimate"
+                unit.abilities.any { it.id == hero.ultimateId },
+                "${hero.name} missing ultimate"
             )
-            assertEquals(loadout.hero.ultimateId, unit.ultimateId, "${loadout.hero.name} meter not wired")
-            assertEquals(3, loadout.hero.weaponIds.size, "${loadout.hero.name} weapon count")
-            // Signature weapons: nobody shares an arsenal.
-            for (other in Party.ROSTER) {
-                if (other.id == loadout.hero.id) continue
+            assertEquals(hero.ultimateId, unit.ultimateId, "${hero.name} meter not wired")
+        }
+        // The six colors each own five weapons and five offhands; nobody
+        // shares an arsenal. Defectors keep their smaller boss kits.
+        for (hero in rainbow) {
+            assertEquals(5, hero.weaponIds.size, "${hero.name} weapon count")
+            assertEquals(5, hero.offhandIds.size, "${hero.name} offhand count")
+            for (other in rainbow) {
+                if (other.id == hero.id) continue
                 assertTrue(
-                    loadout.hero.weaponIds.none { it in other.weaponIds },
-                    "${loadout.hero.name} shares weapons with ${other.name}"
+                    hero.weaponIds.none { it in other.weaponIds },
+                    "${hero.name} shares weapons with ${other.name}"
                 )
             }
         }
     }
 
     @Test
-    fun `level one gear is always legal and levels open the rest`() {
+    fun `default gear is part of every hero's own lists`() {
         for (hero in Party.ROSTER + Party.UNLOCKABLES) {
-            // Defaults must be reachable on a fresh hero.
-            assertTrue(
-                hero.defaultWeaponId in com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 1),
-                "${hero.name} default weapon locked at level 1"
-            )
-            assertTrue(
-                hero.defaultOffhandId in com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 1),
-                "${hero.name} default offhand locked at level 1"
-            )
-            // Level 1: one weapon, two offhands. Max level: everything.
-            assertEquals(1, com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 1).size)
-            assertEquals(2, com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 1).size)
-            assertEquals(hero.weaponIds, com.elendheim.fewsbox.data.Progression.unlockedWeapons(hero, 5))
-            assertEquals(hero.offhandIds, com.elendheim.fewsbox.data.Progression.unlockedOffhands(hero, 5))
+            assertTrue(hero.defaultWeaponId in hero.weaponIds, "${hero.name} default weapon foreign")
+            assertTrue(hero.defaultOffhandId in hero.offhandIds, "${hero.name} default offhand foreign")
+            // Everything referenced actually exists in the registries.
+            for (id in hero.weaponIds) assertTrue(id in Weapons.REGISTRY, "$id missing")
+            for (id in hero.offhandIds) assertTrue(id in Offhands.REGISTRY, "$id missing")
         }
     }
 
     @Test
-    fun `hero levels grow stats and xp thresholds climb`() {
+    fun `hero levels grow stats and xp thresholds climb to fifty`() {
         val p = com.elendheim.fewsbox.data.Progression
         assertEquals(1, p.levelFor(0))
-        assertEquals(1, p.levelFor(59))
-        assertEquals(2, p.levelFor(60))
-        assertEquals(5, p.levelFor(9999))
-        assertEquals(null, p.xpToNext(9999))
+        assertEquals(1, p.levelFor(29))
+        assertEquals(2, p.levelFor(30))
+        assertEquals(50, p.levelFor(p.xpForLevel(50)))
+        assertEquals(50, p.levelFor(999999))
+        assertEquals(null, p.xpToNext(999999))
 
         val fresh = Party.defaultLoadout(Party.RED).toUnit(1)
-        val veteran = Party.defaultLoadout(Party.RED).toUnit(5)
-        assertEquals(fresh.maxHp + 20, veteran.maxHp)
-        assertEquals(fresh.baseAttack + 2, veteran.baseAttack)
+        val veteran = Party.defaultLoadout(Party.RED).toUnit(50)
+        assertEquals(fresh.maxHp + 98, veteran.maxHp)
+        assertEquals(fresh.baseAttack + 16, veteran.baseAttack)
     }
 
     @Test

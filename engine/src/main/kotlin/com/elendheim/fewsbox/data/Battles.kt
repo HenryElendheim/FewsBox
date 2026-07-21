@@ -42,65 +42,65 @@ object Party {
     val RED = HeroDef(
         id = "hero_red", name = "Red", iconId = "ic_hero_red",
         maxHp = 55, baseAttack = 11,
-        weaponIds = listOf("wpn_red_maul", "wpn_red_twin", "wpn_red_guillotine"),
-        offhandIds = listOf("off_spiked_shield", "off_tower_shield", "off_banner", "off_detonator", "off_cleanser"),
-        defaultWeaponId = "wpn_red_maul", defaultOffhandId = "off_spiked_shield",
+        weaponIds = listOf("wpn_red_sword", "wpn_red_maul", "wpn_red_cleaver", "wpn_red_axe", "wpn_red_pulse"),
+        offhandIds = listOf("off_red_buckler", "off_red_vial", "off_red_protector", "off_red_pest", "off_red_warcry"),
+        defaultWeaponId = "wpn_red_sword", defaultOffhandId = "off_red_buckler",
         ultimateId = "ult_red"
     )
 
     val ORANGE = HeroDef(
         id = "hero_orange", name = "Orange", iconId = "ic_hero_orange",
         maxHp = 42, baseAttack = 10,
-        weaponIds = listOf("wpn_orange_brand", "wpn_orange_whip", "wpn_orange_fan"),
-        offhandIds = listOf("off_detonator", "off_medkit", "off_spiked_shield", "off_banner", "off_cleanser"),
-        defaultWeaponId = "wpn_orange_brand", defaultOffhandId = "off_detonator",
+        weaponIds = listOf("wpn_orange_ember", "wpn_orange_torches", "wpn_orange_whip", "wpn_orange_fan", "wpn_orange_blaze"),
+        offhandIds = listOf("off_orange_embergain", "off_orange_matchstick", "off_orange_smokescreen", "off_orange_anger", "off_orange_skies"),
+        defaultWeaponId = "wpn_orange_ember", defaultOffhandId = "off_orange_embergain",
         ultimateId = "ult_orange"
     )
 
     val YELLOW = HeroDef(
         id = "hero_yellow", name = "Yellow", iconId = "ic_hero_yellow",
         maxHp = 48, baseAttack = 8,
-        weaponIds = listOf("wpn_yellow_siphon", "wpn_yellow_lance", "wpn_yellow_bell"),
-        offhandIds = listOf("off_medkit", "off_cleanser", "off_tower_shield", "off_banner", "off_spiked_shield"),
-        defaultWeaponId = "wpn_yellow_siphon", defaultOffhandId = "off_medkit",
+        weaponIds = listOf("wpn_yellow_siphon", "wpn_yellow_bell", "wpn_yellow_lance", "wpn_yellow_lifeline", "wpn_yellow_karma"),
+        offhandIds = listOf("off_yellow_medkit", "off_yellow_light", "off_yellow_overflow", "off_yellow_kisses", "off_yellow_sunrise"),
+        defaultWeaponId = "wpn_yellow_siphon", defaultOffhandId = "off_yellow_medkit",
         ultimateId = "ult_yellow"
     )
 
     val GREEN = HeroDef(
         id = "hero_green", name = "Green", iconId = "ic_hero_green",
         maxHp = 45, baseAttack = 9,
-        weaponIds = listOf("wpn_green_fan", "wpn_green_volley", "wpn_green_scythe"),
-        offhandIds = listOf("off_cleanser", "off_medkit", "off_tower_shield", "off_spiked_shield", "off_detonator"),
-        defaultWeaponId = "wpn_green_fan", defaultOffhandId = "off_cleanser",
+        weaponIds = listOf("wpn_green_fan", "wpn_green_volley", "wpn_green_scythe", "wpn_green_tangle", "wpn_green_blast"),
+        offhandIds = listOf("off_green_quickstep", "off_green_sender", "off_green_mirror", "off_green_boon", "off_green_bark"),
+        defaultWeaponId = "wpn_green_fan", defaultOffhandId = "off_green_quickstep",
         ultimateId = "ult_green"
     )
 
     val BLUE = HeroDef(
         id = "hero_blue", name = "Blue", iconId = "ic_hero_blue",
         maxHp = 60, baseAttack = 8,
-        weaponIds = listOf("wpn_blue_hammer", "wpn_blue_pike", "wpn_blue_undertow"),
-        offhandIds = listOf("off_tower_shield", "off_banner", "off_spiked_shield", "off_medkit", "off_detonator"),
-        defaultWeaponId = "wpn_blue_hammer", defaultOffhandId = "off_tower_shield",
+        weaponIds = listOf("wpn_blue_hammer", "wpn_blue_anchor", "wpn_blue_pike", "wpn_blue_undertow", "wpn_blue_breakwater"),
+        offhandIds = listOf("off_blue_tower", "off_blue_spilled", "off_blue_wall", "off_blue_current", "off_blue_weight"),
+        defaultWeaponId = "wpn_blue_hammer", defaultOffhandId = "off_blue_tower",
         ultimateId = "ult_blue"
     )
 
     val VIOLET = HeroDef(
         id = "hero_violet", name = "Violet", iconId = "ic_hero_violet",
         maxHp = 40, baseAttack = 10,
-        weaponIds = listOf("wpn_violet_reaper", "wpn_violet_fang", "wpn_violet_needle"),
-        offhandIds = listOf("off_detonator", "off_cleanser", "off_banner", "off_medkit", "off_tower_shield"),
-        defaultWeaponId = "wpn_violet_reaper", defaultOffhandId = "off_detonator",
+        weaponIds = listOf("wpn_violet_needle", "wpn_violet_fang", "wpn_violet_reaper", "wpn_violet_gravebind", "wpn_violet_nightfall"),
+        offhandIds = listOf("off_violet_cloak", "off_violet_payback", "off_violet_omen", "off_violet_lastlaugh", "off_violet_thief"),
+        defaultWeaponId = "wpn_violet_needle", defaultOffhandId = "off_violet_cloak",
         ultimateId = "ult_violet"
     )
 
-    // Grayscale defectors: beaten as bosses, then playable. Not in ROSTER —
-    // the UI adds them as their battles fall.
+    // Grayscale defectors: beaten as bosses, then playable with the kit
+    // they fought you with. Their offhands borrow a kindred color's set.
     val ASH = HeroDef(
         id = "hero_ash", name = "Ash", iconId = "ic_hero_ash",
         maxHp = 50, baseAttack = 9,
         weaponIds = listOf("wpn_ash_cinder", "wpn_ash_smoke", "wpn_ash_veil"),
-        offhandIds = listOf("off_detonator", "off_cleanser", "off_spiked_shield", "off_medkit", "off_tower_shield"),
-        defaultWeaponId = "wpn_ash_cinder", defaultOffhandId = "off_detonator",
+        offhandIds = listOf("off_orange_embergain", "off_orange_matchstick", "off_orange_smokescreen", "off_orange_anger", "off_orange_skies"),
+        defaultWeaponId = "wpn_ash_cinder", defaultOffhandId = "off_orange_embergain",
         ultimateId = "ult_ash"
     )
 
@@ -108,20 +108,27 @@ object Party {
         id = "hero_silver", name = "Silver", iconId = "ic_hero_silver",
         maxHp = 70, baseAttack = 10,
         weaponIds = listOf("wpn_silver_edge", "wpn_silver_lash", "wpn_silver_spike"),
-        offhandIds = listOf("off_tower_shield", "off_spiked_shield", "off_banner", "off_detonator", "off_cleanser"),
-        defaultWeaponId = "wpn_silver_edge", defaultOffhandId = "off_tower_shield",
+        offhandIds = listOf("off_blue_tower", "off_blue_spilled", "off_blue_wall", "off_blue_current", "off_blue_weight"),
+        defaultWeaponId = "wpn_silver_edge", defaultOffhandId = "off_blue_tower",
         ultimateId = "ult_silver"
     )
 
-    val ROSTER = listOf(RED, ORANGE, YELLOW, GREEN, BLUE, VIOLET)
+    // You start with Red alone; every other color is earned in order.
+    val ROSTER = listOf(RED)
 
-    val DEFAULT_PARTY_IDS = setOf("hero_red", "hero_green", "hero_blue")
+    val DEFAULT_PARTY_IDS = setOf("hero_red")
 
+    const val ORANGE_ID = "hero_orange"
+    const val YELLOW_ID = "hero_yellow"
+    const val GREEN_ID = "hero_green"
+    const val BLUE_ID = "hero_blue"
+    const val VIOLET_ID = "hero_violet"
     const val ASH_ID = "hero_ash"
     const val SILVER_ID = "hero_silver"
 
-    // Campaign order: Ash falls first, Silver last. Gray never joins.
-    val UNLOCKABLES = listOf(ASH, SILVER)
+    // Unlock order: the early campaign hands out the rainbow, the bosses
+    // hand out their prisoners and themselves. Gray never joins.
+    val UNLOCKABLES = listOf(ORANGE, YELLOW, GREEN, BLUE, VIOLET, ASH, SILVER)
     val UNLOCKABLE_IDS = UNLOCKABLES.map { it.id }
 
     fun loadoutFor(heroId: String): Loadout =
@@ -171,35 +178,46 @@ object Battles {
     // Kept as `count` because the app and tests grew up with that name.
     val count = CAMPAIGN_LEVELS
 
-    // Hand-tuned opening stretch so the first sessions teach one thing at a
-    // time. Codes: g grunt, st stinger, sh shaman, hx hexer, br brute.
+    // Hand-tuned opening stretch, sized for a roster that grows as you go:
+    // Red fights alone first, and the line thickens as colors join.
+    // Codes: g grunt, st stinger, sh shaman, hx hexer, br brute.
     private val openers = listOf(
-        "g g g",         //  1: learn to tap
-        "g st st g",     //  2: poison shows up
-        "sh g g sh",     //  3: healers make you pick targets
-        "hx st st",      //  4: first telegraph
-        "g g g g",       //  5: volume
-        "br g sh st",    //  6: the Brute behind a line
-        "st st sh sh",   //  7: sustain wall
-        "br hx st",      //  8: two telegraphs at once
-        "g g st st sh"   //  9: the long line
+        "g g",           //  1: Red, alone, learns to drag
+        "g g g",         //  2: volume; Orange joins after this
+        "g st g",        //  3: poison shows up
+        "sh g g",        //  4: healers make you pick targets
+        "g st st g",     //  5: the long line; Yellow joins after this
+        "hx st st",      //  6: first telegraph
+        "g g g g",       //  7: volume again
+        "br g sh",       //  8: the Brute behind a line; Green joins after
+        "st st sh sh",   //  9: sustain wall
+        "br hx st",      // 10: two telegraphs at once
+        "g g st st sh",  // 11: the wide line
+        "br sh sh hx"    // 12: elites behind healers; Blue joins after
     )
 
-    // Boss levels (0-based): every 25th level is a set piece, level 100 is Gray.
-    const val ASH_BOSS_INDEX = 24
-    const val SILVER_BOSS_INDEX = 49
-    const val TWIN_BOSS_INDEX = 74
+    // Boss levels (0-based). Ash guards Violet's cage at 25, comes back
+    // harder at 50 and defects when he falls again. Silver holds 75, then
+    // stands with Gray at the end — and joins you once the campaign is won.
+    const val WARDEN_BOSS_INDEX = 24
+    const val ASH_BOSS_INDEX = 49
+    const val SILVER_BOSS_INDEX = 74
     const val FINAL_BOSS_INDEX = 99
 
-    // Clearing these battles turns their boss to your side. Gray never joins.
+    // What beating each set piece frees. Gray never joins.
     val unlocks: Map<Int, String> = mapOf(
+        1 to Party.ORANGE_ID,
+        4 to Party.YELLOW_ID,
+        7 to Party.GREEN_ID,
+        11 to Party.BLUE_ID,
+        WARDEN_BOSS_INDEX to Party.VIOLET_ID,
         ASH_BOSS_INDEX to Party.ASH_ID,
-        SILVER_BOSS_INDEX to Party.SILVER_ID
+        FINAL_BOSS_INDEX to Party.SILVER_ID
     )
 
     fun isBossLevel(index: Int) =
-        index == ASH_BOSS_INDEX || index == SILVER_BOSS_INDEX ||
-            index == TWIN_BOSS_INDEX || index == FINAL_BOSS_INDEX
+        index == WARDEN_BOSS_INDEX || index == ASH_BOSS_INDEX ||
+            index == SILVER_BOSS_INDEX || index == FINAL_BOSS_INDEX
 
     /**
      * How many stages a level runs. Campaign: every 10th level is a gauntlet
@@ -258,25 +276,27 @@ object Battles {
     }
 
     private fun bossStage(index: Int, stage: Int): List<CombatUnit>? = when {
-        index == ASH_BOSS_INDEX -> listOf(
+        // Ash the warden, holding Violet's cage.
+        index == WARDEN_BOSS_INDEX -> listOf(
             scaled(Enemies.stinger("enemy_1"), 1.6, 1.2),
             scaled(Enemies.ash("enemy_2"), 1.3, 1.1),
             scaled(Enemies.stinger("enemy_3"), 1.6, 1.2)
         )
-        index == SILVER_BOSS_INDEX -> listOf(
+        // Ash again, angrier — beat him twice and he switches sides.
+        index == ASH_BOSS_INDEX -> listOf(
             scaled(Enemies.shaman("enemy_1"), 2.2, 1.5),
-            scaled(Enemies.silver("enemy_2"), 1.5, 1.2),
+            scaled(Enemies.ash("enemy_2"), 2.0, 1.4),
             scaled(Enemies.shaman("enemy_3"), 2.2, 1.5)
         )
-        index == TWIN_BOSS_INDEX -> listOf(
-            scaled(Enemies.ash("enemy_1"), 2.0, 1.4),
-            scaled(Enemies.silver("enemy_2"), 1.8, 1.3)
+        index == SILVER_BOSS_INDEX -> listOf(
+            scaled(Enemies.shaman("enemy_1"), 2.6, 1.7),
+            scaled(Enemies.silver("enemy_2"), 1.9, 1.3),
+            scaled(Enemies.shaman("enemy_3"), 2.6, 1.7)
         )
         index == FINAL_BOSS_INDEX -> when (stage) {
             0 -> listOf(
-                scaled(Enemies.grunt("enemy_1"), 3.0, 2.0),
-                Enemies.gray("enemy_2", phase = 1),
-                scaled(Enemies.grunt("enemy_3"), 3.0, 2.0)
+                scaled(Enemies.silver("enemy_1"), 1.6, 1.2),
+                Enemies.gray("enemy_2", phase = 1)
             )
             1 -> listOf(
                 Enemies.gray("enemy_1", phase = 2),
@@ -320,7 +340,7 @@ object Battles {
 
     fun enemiesFor(index: Int, stage: Int): List<CombatUnit> {
         bossStage(index, stage)?.let { return it }
-        if (index < openers.size) {
+        if (index < openers.size && stage == 0) {
             return openers[index].split(" ").mapIndexed { slot, code -> build(code, slot + 1) }
         }
         return generated(index, stage)

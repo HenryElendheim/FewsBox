@@ -22,5 +22,7 @@ enum class Targeting {
     SELF,
     SINGLE_ALLY,
     ALL_ALLIES,
-    ADJACENT_ENEMIES        // cleave: target plus its neighbors
+    ADJACENT_ENEMIES,       // cleave: target plus its neighbors
+    WHIP_ADJACENT,          // 3 lashes: target + each neighbor; loners eat all 3
+    VOLLEY_ADJACENT         // full hits on the target, 1 spillover per neighbor
 }

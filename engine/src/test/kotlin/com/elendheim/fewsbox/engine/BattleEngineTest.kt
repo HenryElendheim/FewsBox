@@ -388,9 +388,9 @@ class BattleEngineTest {
     @Test
     fun `stage counts follow the campaign plan and stay deterministic in endless`() {
         // Bosses: three set pieces are single fights, the finale runs three.
+        assertEquals(1, Battles.stageCountFor(Battles.WARDEN_BOSS_INDEX))
         assertEquals(1, Battles.stageCountFor(Battles.ASH_BOSS_INDEX))
         assertEquals(1, Battles.stageCountFor(Battles.SILVER_BOSS_INDEX))
-        assertEquals(1, Battles.stageCountFor(Battles.TWIN_BOSS_INDEX))
         assertEquals(3, Battles.stageCountFor(Battles.FINAL_BOSS_INDEX))
 
         // Every 10th level is a gauntlet of 3 to 5 stages; the rest are single.
@@ -441,7 +441,7 @@ class BattleEngineTest {
     }
 
     @Test
-    fun `the finale is gray in every stage and gray never defects`() {
+    fun `the finale is gray in every stage and beating it frees silver`() {
         for (stage in 0 until 3) {
             val state = Battles.createStage(Battles.FINAL_BOSS_INDEX, stage, Party.defaultParty())
             assertTrue(
@@ -449,6 +449,8 @@ class BattleEngineTest {
                 "final boss stage $stage is missing Gray"
             )
         }
-        assertTrue(Battles.unlocks.none { it.key == Battles.FINAL_BOSS_INDEX })
+        // Silver joins when the campaign falls; Gray himself never does.
+        assertEquals(Party.SILVER_ID, Battles.unlocks[Battles.FINAL_BOSS_INDEX])
+        assertTrue(Battles.unlocks.values.none { it == "hero_gray" })
     }
 }

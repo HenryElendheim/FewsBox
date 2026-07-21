@@ -22,7 +22,8 @@ data class CombatUnit(
     val aiProfile: AiProfile? = null, // null for player-controlled units
     val cooldowns: MutableMap<String, Int> = mutableMapOf(), // abilityId -> turns left
     val ultimateId: String? = null,  // which ability is gated by the party ult meter
-    var damageDealtTotal: Int = 0    // running battle total, feeds XP payouts
+    var damageDealtTotal: Int = 0,   // running battle total, feeds XP payouts
+    var healingDoneTotal: Int = 0    // running battle total, feeds Karma-style scaling
 ) {
     val isAlive: Boolean get() = hp > 0
 

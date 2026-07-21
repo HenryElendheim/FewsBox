@@ -278,14 +278,7 @@ private fun HeroResultRow(result: HeroResult, animate: Boolean, instant: Boolean
 /** Progress toward the next hero level, full gold at cap. */
 @Composable
 private fun XpBar(xp: Int) {
-    val level = Progression.levelFor(xp)
-    val fraction = if (level >= Progression.MAX_LEVEL) {
-        1f
-    } else {
-        val floor = Progression.LEVEL_XP[level - 1]
-        val ceil = Progression.LEVEL_XP[level]
-        (xp - floor).toFloat() / (ceil - floor)
-    }
+    val fraction = Progression.levelProgress(xp)
     Box(
         Modifier
             .fillMaxWidth()

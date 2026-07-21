@@ -51,6 +51,7 @@ import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.IconChip
 import com.elendheim.fewsbox.ui.InfoContent
 import com.elendheim.fewsbox.ui.InfoOverlay
+import com.elendheim.fewsbox.ui.shop.Shop
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.EnergyGold
 import com.elendheim.fewsbox.ui.theme.HpGreen
@@ -82,7 +83,10 @@ fun LoadoutScreen(
     onFight: () -> Unit,
     endlessBest: Int = 0,
     endlessUnlocked: Boolean = false,
-    onPlayEndless: () -> Unit = {}
+    onPlayEndless: () -> Unit = {},
+    fews: Int = 0,
+    ownedGear: Set<String> = emptySet(),
+    onOpenShop: () -> Unit = {}
 ) {
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
@@ -104,13 +108,31 @@ fun LoadoutScreen(
                 letterSpacing = 6.sp
             )
             Spacer(Modifier.height(4.dp))
-            Text(
-                "${bestStars.values.sum()}/${Battles.count * 3} STARS",
-                color = EnergyGold,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    "${bestStars.values.sum()}/${Battles.count * 3} STARS",
+                    color = EnergyGold,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    "$fews FEWS",
+                    color = TextBright,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.combinedClickable(onClick = onOpenShop, onLongClick = {})
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onOpenShop,
+                colors = ButtonDefaults.buttonColors(containerColor = PanelRaised, contentColor = TextBright),
+                modifier = Modifier.fillMaxWidth().height(40.dp)
+            ) {
+                Text("SHOP", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 3.sp)
+            }
 
             Spacer(Modifier.height(14.dp))
 
@@ -208,6 +230,7 @@ fun LoadoutScreen(
                     member = member,
                     level = heroLevels[member.hero.id] ?: 1,
                     xp = heroXp[member.hero.id] ?: 0,
+                    ownedGear = ownedGear,
                     onLoadoutChange = onLoadoutChange,
                     onInfo = { info = it }
                 )
@@ -371,9 +394,12 @@ private fun HeroLoadoutCard(
     member: Loadout,
     level: Int,
     xp: Int,
+    ownedGear: Set<String>,
     onLoadoutChange: (Loadout) -> Unit,
     onInfo: (InfoContent) -> Unit
 ) {
+    fun owns(id: String) =
+        id == member.hero.defaultWeaponId || id == member.hero.defaultOffhandId || id in ownedGear
     val attack = member.hero.baseAttack + Progression.bonusAttack(level) + member.weapon.attackBonus
     val hp = member.hero.maxHp + Progression.bonusHp(level)
     val toNext = Progression.xpToNext(xp)
@@ -421,19 +447,18 @@ private fun HeroLoadoutCard(
         Spacer(Modifier.height(12.dp))
         GatedPickerRow(
             allIds = member.hero.weaponIds,
-            unlockedIds = Progression.unlockedWeapons(member.hero, level),
+            unlockedIds = member.hero.weaponIds.filter { owns(it) },
             iconFor = { Weapons.REGISTRY.getValue(it).iconId },
             selectedId = member.weapon.id,
-            unlockLevelFor = { Progression.weaponUnlockLevel(it) },
             onPick = { id -> onLoadoutChange(member.copy(weapon = Weapons.REGISTRY.getValue(id))) },
-            onHold = { id, unlocked, unlockLevel ->
+            onHold = { id, unlocked ->
                 val weapon = Weapons.REGISTRY.getValue(id)
                 onInfo(
                     InfoContent(
                         title = GameText.name(id),
                         subtitle = if (unlocked) {
                             "Weapon" + if (weapon.attackBonus > 0) " · +${weapon.attackBonus} ATK" else ""
-                        } else "Weapon · unlocks at level $unlockLevel",
+                        } else "Weapon · ${Shop.WEAPON_PRICE} fews in the shop",
                         lines = listOf(GameText.weaponBlurb(id)) +
                             GameText.describeAbility(
                                 weapon.grantedAbility,
@@ -446,17 +471,16 @@ private fun HeroLoadoutCard(
         Spacer(Modifier.height(8.dp))
         GatedPickerRow(
             allIds = member.hero.offhandIds,
-            unlockedIds = Progression.unlockedOffhands(member.hero, level),
+            unlockedIds = member.hero.offhandIds.filter { owns(it) },
             iconFor = { Offhands.REGISTRY.getValue(it).iconId },
             selectedId = member.offhand.id,
-            unlockLevelFor = { Progression.offhandUnlockLevel(it) },
             onPick = { id -> onLoadoutChange(member.copy(offhand = Offhands.REGISTRY.getValue(id))) },
-            onHold = { id, unlocked, unlockLevel ->
+            onHold = { id, unlocked ->
                 val offhand = Offhands.REGISTRY.getValue(id)
                 onInfo(
                     InfoContent(
                         title = GameText.name(id),
-                        subtitle = if (unlocked) "Offhand" else "Offhand · unlocks at level $unlockLevel",
+                        subtitle = if (unlocked) "Offhand" else "Offhand · ${Shop.OFFHAND_PRICE} fews in the shop",
                         lines = listOf(GameText.offhandBlurb(id)) +
                             GameText.describeAbility(offhand.grantedAbility, attack)
                     )
@@ -478,15 +502,14 @@ private fun GatedPickerRow(
     unlockedIds: List<String>,
     iconFor: (String) -> String,
     selectedId: String,
-    unlockLevelFor: (Int) -> Int,
     onPick: (String) -> Unit,
-    onHold: (id: String, unlocked: Boolean, unlockLevel: Int) -> Unit
+    onHold: (id: String, unlocked: Boolean) -> Unit
 ) {
     Row(
         Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        for ((index, id) in allIds.withIndex()) {
+        for (id in allIds) {
             val unlocked = id in unlockedIds
             val selected = id == selectedId
             Box(
@@ -500,7 +523,7 @@ private fun GatedPickerRow(
                     .alpha(if (unlocked) 1f else 0.3f)
                     .combinedClickable(
                         onClick = { if (unlocked) onPick(id) },
-                        onLongClick = { onHold(id, unlocked, unlockLevelFor(index)) }
+                        onLongClick = { onHold(id, unlocked) }
                     )
                     .padding(3.dp)
             ) {

@@ -1,57 +1,44 @@
 package com.elendheim.fewsbox.data
 
 /**
- * Hero growth. Winning battles feeds XP to everyone who fought; hero levels
- * unlock the mixing itself - you start with one signature weapon and two
- * offhands, and every level opens more of the kit. Small stat growth rides
- * along so veterans feel like veterans.
+ * Hero growth. Winning battles feeds XP to everyone who fought; levels are
+ * pure stat growth — health and damage, capped at 50. The kit itself is
+ * never level-gated: weapons and offhands are bought with fews in the shop,
+ * and every piece is a sidegrade, so gear is customization, not power.
  */
 object Progression {
 
-    const val MAX_LEVEL = 5
+    const val MAX_LEVEL = 50
 
-    // Total XP needed to sit at each level (index 0 = level 1).
-    val LEVEL_XP = listOf(0, 60, 150, 300, 500)
+    /** Total XP needed to SIT at [level]: a gentle quadratic ramp. */
+    fun xpForLevel(level: Int): Int {
+        val n = level.coerceIn(1, MAX_LEVEL) - 1
+        return 15 * n * (n + 1)  // level 2 at 30 XP, 10 at 1350, 50 at 36750
+    }
 
     fun levelFor(xp: Int): Int {
         var level = 1
-        for (i in LEVEL_XP.indices) {
-            if (xp >= LEVEL_XP[i]) level = i + 1
-        }
-        return level.coerceAtMost(MAX_LEVEL)
+        while (level < MAX_LEVEL && xp >= xpForLevel(level + 1)) level++
+        return level
     }
 
     /** XP still needed for the next level, or null at cap. */
     fun xpToNext(xp: Int): Int? {
         val level = levelFor(xp)
         if (level >= MAX_LEVEL) return null
-        return LEVEL_XP[level] - xp
+        return xpForLevel(level + 1) - xp
     }
 
-    /** Winning battle [battleIndex] pays this much XP to each fighter. */
-    // XP is paid from battle performance now: damage dealt plus a small
-    // survivor's bonus, computed by the app from the battle result.
+    /** Fraction of the way from the current level to the next, for XP bars. */
+    fun levelProgress(xp: Int): Float {
+        val level = levelFor(xp)
+        if (level >= MAX_LEVEL) return 1f
+        val floor = xpForLevel(level)
+        val ceil = xpForLevel(level + 1)
+        return ((xp - floor).toFloat() / (ceil - floor)).coerceIn(0f, 1f)
+    }
 
-    // ------------------------------------------------------------------
-    //  What a hero level unlocks. Weapon list order IS the unlock order,
-    //  same for offhands; defaults sit first so level 1 is always legal.
-    // ------------------------------------------------------------------
-
-    /** Weapons available at [level]: one at level 1, all three by level 3. */
-    fun unlockedWeapons(hero: HeroDef, level: Int): List<String> =
-        hero.weaponIds.take(level.coerceIn(1, hero.weaponIds.size))
-
-    /** Offhands available at [level]: two at level 1, one more per level. */
-    fun unlockedOffhands(hero: HeroDef, level: Int): List<String> =
-        hero.offhandIds.take((level + 1).coerceIn(2, hero.offhandIds.size))
-
-    /** The hero level at which weapon slot [index] opens. */
-    fun weaponUnlockLevel(index: Int): Int = index + 1
-
-    /** The hero level at which offhand slot [index] opens. */
-    fun offhandUnlockLevel(index: Int): Int = (index - 1).coerceAtLeast(1)
-
-    // Stat growth per level above 1: steady HP, ATK on odd levels.
-    fun bonusHp(level: Int): Int = 5 * (level - 1)
-    fun bonusAttack(level: Int): Int = (level - 1) / 2
+    // Stat growth per level above 1: steady HP, ATK every third level.
+    fun bonusHp(level: Int): Int = 2 * (level - 1)
+    fun bonusAttack(level: Int): Int = (level - 1) / 3
 }

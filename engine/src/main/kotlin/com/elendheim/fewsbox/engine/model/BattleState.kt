@@ -14,7 +14,10 @@ data class BattleState(
     // The party's shared ultimate meter in TENTHS of a percent (0..1000):
     // +5% per landed attack, +3% per hit taken (+15% for a hit that costs
     // over half the hero's max HP), never over full.
-    var partyUltCharge: Int = 0
+    var partyUltCharge: Int = 0,
+    // Fews shaken loose mid-battle (the Thief enchant); the app banks these
+    // into the wallet on top of the star payout.
+    var fewsEarned: Int = 0
 ) {
     val partyUltPercent: Int get() = partyUltCharge / 10
     val partyUltReady: Boolean get() = partyUltCharge >= 1000

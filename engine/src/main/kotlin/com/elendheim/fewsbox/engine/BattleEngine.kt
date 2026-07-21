@@ -7,6 +7,7 @@ import com.elendheim.fewsbox.engine.model.BattleState
 import com.elendheim.fewsbox.engine.model.CombatUnit
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.model.TurnPhase
+import com.elendheim.fewsbox.engine.status.PassiveEffect
 import com.elendheim.fewsbox.engine.status.StatusDef
 import com.elendheim.fewsbox.engine.status.StatusKind
 import com.elendheim.fewsbox.engine.status.StatusTiming
@@ -150,6 +151,15 @@ class BattleEngine(
     // ------------------------------------------------------------------
 
     private fun endOfRound(state: BattleState) {
+        // Anger Management: every angry hero feeds the meter as the round
+        // closes, before durations tick down.
+        for (unit in state.units.filter { it.isAlive && it.team == Team.PLAYER }) {
+            val ultTick = unit.statuses.sumOf { status ->
+                statusRegistry[status.defId]
+                    ?.takeIf { it.passive == PassiveEffect.ULT_TICK }?.magnitude ?: 0
+            }
+            if (ultTick > 0) resolver.gainPartyUlt(state, ultTick * 10)
+        }
         for (unit in state.units.filter { it.isAlive }) {
             val expired = mutableListOf<String>()
             for (status in unit.statuses) {
