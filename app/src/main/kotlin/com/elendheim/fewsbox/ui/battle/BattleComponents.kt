@@ -41,8 +41,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +55,7 @@ import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Resolver
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.IconChip
+import com.elendheim.fewsbox.ui.Prefs
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.EnergyGold
 import com.elendheim.fewsbox.ui.theme.HpGreen
@@ -185,7 +188,7 @@ fun UnitCard(
     // The attacker steps toward the other line and springs back.
     val lunge = remember { Animatable(0f) }
     LaunchedEffect(isActing) {
-        if (isActing) {
+        if (isActing && !Prefs.reduceMotion) {
             val toward = if (unit.team == Team.PLAYER) -26f else 26f
             lunge.animateTo(toward, tween(durationMillis = 130, easing = FastOutSlowInEasing))
             lunge.animateTo(
@@ -201,6 +204,11 @@ fun UnitCard(
     val washAlpha = remember { Animatable(0f) }
     LaunchedEffect(flash?.key) {
         val kind = flash?.kind ?: return@LaunchedEffect
+        if (Prefs.reduceMotion) {
+            washAlpha.snapTo(0.5f)
+            washAlpha.animateTo(0f, tween(durationMillis = 380))
+            return@LaunchedEffect
+        }
         launch {
             when (kind) {
                 FlashKind.HIT -> {
@@ -317,9 +325,11 @@ fun UnitCard(
                     Text("T", color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
                 }
             }
+            // Numbers anchor at the bottom of the block, directly above the
+            // health bar, so what you lost and what's left read together.
             Box(
                 Modifier.requiredSize(64.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.BottomCenter
             ) {
                 FloatingNumbers(floaties)
             }
@@ -366,16 +376,26 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
                 animationSpec = tween(durationMillis = 800),
                 label = "floaty${floaty.key}"
             )
+            val big = Prefs.bigNumbers
             // Big and unmissable: reading the number IS the combat feedback.
+            // A dark halo keeps it legible over any block color.
             Text(
                 text = floaty.text,
                 color = floaty.color,
-                fontSize = if (floaty.label) 13.sp else 24.sp,
+                fontSize = when {
+                    floaty.label && big -> 16.sp
+                    floaty.label -> 13.sp
+                    big -> 30.sp
+                    else -> 25.sp
+                },
                 fontWeight = FontWeight.Black,
+                style = TextStyle(
+                    shadow = Shadow(color = Color(0xE6000000), blurRadius = 8f)
+                ),
                 modifier = Modifier
                     .graphicsLayer {
-                        translationY = -44f * progress
-                        alpha = 1f - progress * 0.8f
+                        translationY = -34f * progress
+                        alpha = 1f - progress * 0.7f
                         scaleX = 1f + 0.25f * (1f - progress)
                         scaleY = 1f + 0.25f * (1f - progress)
                     }

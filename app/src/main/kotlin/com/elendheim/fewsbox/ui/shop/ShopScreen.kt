@@ -176,9 +176,10 @@ private fun ArmoryTab(
                     Text(hero.name, color = TextBright, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 Spacer(Modifier.height(8.dp))
-                val gear = hero.weaponIds + hero.offhandIds
+                // Weapons on one shelf, offhands on their own below.
+                for (gear in listOf(hero.weaponIds, hero.offhandIds)) {
                 Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
+                    Modifier.horizontalScroll(rememberScrollState()).padding(bottom = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     for (id in gear) {
@@ -236,6 +237,7 @@ private fun ArmoryTab(
                             )
                         }
                     }
+                }
                 }
             }
         }

@@ -57,6 +57,7 @@ import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.InfoContent
 import com.elendheim.fewsbox.ui.InfoOverlay
 import com.elendheim.fewsbox.ui.GameIcons
+import com.elendheim.fewsbox.ui.Prefs
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.DangerRed
 import com.elendheim.fewsbox.ui.theme.EnergyGold
@@ -122,6 +123,7 @@ fun BattleScreen(
         fun statusColor(statusId: String): Color =
             Statuses.REGISTRY[statusId]?.let { GameIcons[it.iconId].tint } ?: TextMuted
         fun shakeScreen() {
+            if (Prefs.reduceMotion) return
             launch {
                 shake.snapTo(0f)
                 shake.animateTo(
@@ -266,7 +268,7 @@ fun BattleScreen(
         ) {
             Text(
                 text = "$levelLabel$stageLabel",
-                color = TextMuted,
+                color = if (Prefs.highContrast) TextBright else TextMuted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
@@ -438,12 +440,33 @@ fun BattleScreen(
             Text(
                 text = if (battle.partyUltReady) "ULT READY - DRAG THE BAR ONTO A HERO"
                 else "ULT ${battle.partyUltPercent}%",
-                color = if (battle.partyUltReady) EnergyGold else TextMuted,
+                color = when {
+                    battle.partyUltReady -> EnergyGold
+                    Prefs.highContrast -> TextBright
+                    else -> TextMuted
+                },
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(top = 6.dp)
             )
+
+            // The first level teaches itself: one instruction at a time,
+            // rotating with the rounds, gone forever once level 1 falls.
+            if (snapshot.levelIndex == 0 && !Prefs.tutorialDone) {
+                Text(
+                    text = when {
+                        battle.round <= 1 -> "TUTORIAL: DRAG RED ONTO AN ENEMY TO ATTACK"
+                        battle.round == 2 -> "TAP RED TO USE HIS OFFHAND ON HIMSELF"
+                        else -> "HOLD ANY CHARACTER OR ITEM TO SEE ITS EXACT NUMBERS"
+                    },
+                    color = TextBright,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
             Spacer(Modifier.height(8.dp))
         }
 

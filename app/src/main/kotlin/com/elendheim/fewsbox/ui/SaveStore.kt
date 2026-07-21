@@ -1,7 +1,10 @@
 package com.elendheim.fewsbox.ui
 
 import android.content.Context
+import android.util.Base64
 import com.elendheim.fewsbox.data.Battles
+import org.json.JSONArray
+import org.json.JSONObject
 import com.elendheim.fewsbox.data.Loadout
 import com.elendheim.fewsbox.data.Offhands
 import com.elendheim.fewsbox.data.Party
@@ -148,5 +151,53 @@ object SaveStore {
             editor.putString("${loadout.hero.id}.offhand", loadout.offhand.id)
         }
         editor.apply()
+    }
+
+    // ------------------------------------------------------------------
+    //  Save transfer: the whole save as a copyable code. Typed JSON under
+    //  Base64 so imports survive across versions and validation still runs
+    //  through load() afterwards.
+    // ------------------------------------------------------------------
+
+    fun exportCode(context: Context): String {
+        val all = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).all
+        val obj = JSONObject()
+        for ((key, value) in all) {
+            when (value) {
+                is Int -> obj.put(key, JSONObject().put("t", "i").put("v", value))
+                is Boolean -> obj.put(key, JSONObject().put("t", "b").put("v", value))
+                is String -> obj.put(key, JSONObject().put("t", "s").put("v", value))
+                is Set<*> -> obj.put(
+                    key,
+                    JSONObject().put("t", "ss").put("v", JSONArray(value.map { it.toString() }))
+                )
+            }
+        }
+        return Base64.encodeToString(obj.toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+    }
+
+    fun importCode(context: Context, code: String): Boolean {
+        return try {
+            val decoded = String(Base64.decode(code.trim(), Base64.NO_WRAP), Charsets.UTF_8)
+            val obj = JSONObject(decoded)
+            if (!obj.keys().hasNext()) return false
+            val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear()
+            for (key in obj.keys()) {
+                val entry = obj.getJSONObject(key)
+                when (entry.getString("t")) {
+                    "i" -> editor.putInt(key, entry.getInt("v"))
+                    "b" -> editor.putBoolean(key, entry.getBoolean("v"))
+                    "s" -> editor.putString(key, entry.getString("v"))
+                    "ss" -> {
+                        val arr = entry.getJSONArray("v")
+                        editor.putStringSet(key, (0 until arr.length()).map { arr.getString(it) }.toSet())
+                    }
+                }
+            }
+            editor.commit()
+            true
+        } catch (_: Throwable) {
+            false
+        }
     }
 }

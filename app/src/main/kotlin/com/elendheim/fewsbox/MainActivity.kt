@@ -20,7 +20,9 @@ import com.elendheim.fewsbox.data.Battles
 import com.elendheim.fewsbox.data.Loadout
 import com.elendheim.fewsbox.data.Party
 import com.elendheim.fewsbox.data.Progression
+import com.elendheim.fewsbox.ui.Prefs
 import com.elendheim.fewsbox.ui.SaveStore
+import com.elendheim.fewsbox.ui.settings.SettingsScreen
 import com.elendheim.fewsbox.ui.battle.BattleScreen
 import com.elendheim.fewsbox.ui.battle.BattleViewModel
 import com.elendheim.fewsbox.ui.loadout.LoadoutScreen
@@ -44,25 +46,29 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { LOADOUT, BATTLE, RESULTS, SHOP }
+private enum class Screen { LOADOUT, BATTLE, RESULTS, SHOP, SETTINGS }
 
 @Composable
 fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
     val context = LocalContext.current
-    val saved = remember { SaveStore.load(context) }
+    // Bumping saveVersion re-reads everything from disk — that is how an
+    // imported save takes over the running app.
+    var saveVersion by remember { mutableIntStateOf(0) }
+    remember { Prefs.load(context); true }
+    val saved = remember(saveVersion) { SaveStore.load(context) }
 
     var screen by remember { mutableStateOf(Screen.LOADOUT) }
-    var maxUnlocked by remember { mutableIntStateOf(saved.maxUnlocked) }
-    var selectedLevel by remember { mutableIntStateOf(saved.selectedLevel) }
-    var bestStars by remember { mutableStateOf(saved.bestStars) }
-    var heroXp by remember { mutableStateOf(saved.heroXp) }
-    var roster by remember { mutableStateOf(saved.roster) }
-    var selectedIds by remember { mutableStateOf(saved.selectedIds) }
-    var unlockedIds by remember { mutableStateOf(saved.unlockedIds) }
-    var endlessBest by remember { mutableIntStateOf(saved.endlessBest) }
-    var fews by remember { mutableIntStateOf(saved.fews) }
-    var ownedGear by remember { mutableStateOf(saved.ownedGear) }
-    var consumables by remember { mutableStateOf(saved.consumables) }
+    var maxUnlocked by remember(saveVersion) { mutableIntStateOf(saved.maxUnlocked) }
+    var selectedLevel by remember(saveVersion) { mutableIntStateOf(saved.selectedLevel) }
+    var bestStars by remember(saveVersion) { mutableStateOf(saved.bestStars) }
+    var heroXp by remember(saveVersion) { mutableStateOf(saved.heroXp) }
+    var roster by remember(saveVersion) { mutableStateOf(saved.roster) }
+    var selectedIds by remember(saveVersion) { mutableStateOf(saved.selectedIds) }
+    var unlockedIds by remember(saveVersion) { mutableStateOf(saved.unlockedIds) }
+    var endlessBest by remember(saveVersion) { mutableIntStateOf(saved.endlessBest) }
+    var fews by remember(saveVersion) { mutableIntStateOf(saved.fews) }
+    var ownedGear by remember(saveVersion) { mutableStateOf(saved.ownedGear) }
+    var consumables by remember(saveVersion) { mutableStateOf(saved.consumables) }
     var battleLevel by remember { mutableIntStateOf(0) }
     var lastStars by remember { mutableIntStateOf(0) }
     var lastResults by remember { mutableStateOf<List<HeroResult>>(emptyList()) }
@@ -128,7 +134,22 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
             onPlayEndless = { startFight(Battles.CAMPAIGN_LEVELS + endlessBest) },
             fews = fews,
             ownedGear = ownedGear,
-            onOpenShop = { screen = Screen.SHOP }
+            onOpenShop = {
+                if (!Prefs.shopHintSeen) {
+                    Prefs.shopHintSeen = true
+                    Prefs.save(context)
+                }
+                screen = Screen.SHOP
+            },
+            onOpenSettings = { screen = Screen.SETTINGS }
+        )
+
+        Screen.SETTINGS -> SettingsScreen(
+            onImported = {
+                saveVersion++
+                screen = Screen.LOADOUT
+            },
+            onBack = { screen = Screen.LOADOUT }
         )
 
         Screen.SHOP -> ShopScreen(
@@ -220,6 +241,12 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                         roster = roster + loadout
                         lastUnlockName = loadout.hero.name
                     }
+                }
+
+                // Level 1 down means the teaching hints have done their job.
+                if (battleLevel == 0 && !Prefs.tutorialDone) {
+                    Prefs.tutorialDone = true
+                    Prefs.save(context)
                 }
 
                 if (isEndless) {

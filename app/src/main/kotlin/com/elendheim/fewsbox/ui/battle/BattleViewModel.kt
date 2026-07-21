@@ -10,6 +10,7 @@ import com.elendheim.fewsbox.engine.event.CombatEvent
 import com.elendheim.fewsbox.engine.model.BattleState
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.engine.model.TurnPhase
+import com.elendheim.fewsbox.ui.Prefs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -204,12 +205,13 @@ class BattleViewModel : ViewModel() {
             // A beat after the player's last tap, then one enemy at a time
             // with a pause between turns, so the round reads as a sequence
             // instead of a burst of numbers.
+            val beat = if (Prefs.slowEnemies) 1100L else 700L
             delay(600)
             if (e.beginEnemyPhase(s)) {
                 push()
                 while (e.nextEnemyTurn(s)) {
                     push()
-                    delay(700)
+                    delay(beat)
                 }
                 e.completeRound(s)
             }

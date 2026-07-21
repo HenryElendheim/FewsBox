@@ -51,6 +51,7 @@ import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.IconChip
 import com.elendheim.fewsbox.ui.InfoContent
 import com.elendheim.fewsbox.ui.InfoOverlay
+import com.elendheim.fewsbox.ui.Prefs
 import com.elendheim.fewsbox.ui.shop.Shop
 import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.EnergyGold
@@ -86,7 +87,8 @@ fun LoadoutScreen(
     onPlayEndless: () -> Unit = {},
     fews: Int = 0,
     ownedGear: Set<String> = emptySet(),
-    onOpenShop: () -> Unit = {}
+    onOpenShop: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     var info by remember { mutableStateOf<InfoContent?>(null) }
 
@@ -126,12 +128,28 @@ fun LoadoutScreen(
                 )
             }
             Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = onOpenShop,
-                colors = ButtonDefaults.buttonColors(containerColor = PanelRaised, contentColor = TextBright),
-                modifier = Modifier.fillMaxWidth().height(40.dp)
-            ) {
-                Text("SHOP", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 3.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onOpenShop,
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised, contentColor = TextBright),
+                    modifier = Modifier.weight(1f).height(40.dp)
+                ) {
+                    Text("SHOP", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 3.sp)
+                }
+                Button(
+                    onClick = onOpenSettings,
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised, contentColor = TextBright),
+                    modifier = Modifier.weight(1f).height(40.dp)
+                ) {
+                    Text("SETTINGS", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 2.sp)
+                }
+            }
+            if (!Prefs.shopHintSeen && fews >= 80) {
+                Text(
+                    "You can afford something new - check the shop",
+                    color = EnergyGold, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
             }
 
             Spacer(Modifier.height(14.dp))
