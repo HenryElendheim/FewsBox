@@ -75,20 +75,31 @@ fun ResultsScreen(
     onContinue: () -> Unit
 ) {
     // 0 = nothing shown yet; counts up as stars land, then rows appear.
+    // Pressing CONTINUE mid-reveal fast-forwards everything to done.
     var starsShown by remember { mutableIntStateOf(0) }
     var rowsVisible by remember { mutableStateOf(false) }
+    var revealDone by remember { mutableStateOf(false) }
+    var skipped by remember { mutableStateOf(false) }
     val showStars = stars > 0
 
-    LaunchedEffect(Unit) {
-        delay(350)
+    LaunchedEffect(skipped) {
+        if (skipped) {
+            starsShown = stars
+            rowsVisible = true
+            revealDone = true
+            return@LaunchedEffect
+        }
+        delay(200)
         if (showStars) {
             repeat(stars) {
-                delay(430)
+                delay(240)
                 starsShown++
             }
         }
-        delay(380)
+        delay(200)
         rowsVisible = true
+        delay(800)
+        revealDone = true
     }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
@@ -126,7 +137,7 @@ fun ResultsScreen(
             }
 
             for (result in heroResults) {
-                HeroResultRow(result, animate = rowsVisible)
+                HeroResultRow(result, animate = rowsVisible, instant = skipped)
                 Spacer(Modifier.height(10.dp))
             }
 
@@ -159,7 +170,7 @@ fun ResultsScreen(
             Spacer(Modifier.weight(1f))
 
             Button(
-                onClick = onContinue,
+                onClick = { if (revealDone) onContinue() else skipped = true },
                 colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Ink),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
@@ -196,15 +207,17 @@ private fun StarPop(size: androidx.compose.ui.unit.Dp, earned: Boolean, landed: 
 }
 
 @Composable
-private fun HeroResultRow(result: HeroResult, animate: Boolean) {
+private fun HeroResultRow(result: HeroResult, animate: Boolean, instant: Boolean = false) {
     // The row's XP counts up from where the hero started to where they
     // ended, and the bar fills along with it — across level-ups too.
     val shownXp = remember { Animatable(result.xpBefore.toFloat()) }
-    LaunchedEffect(animate) {
-        if (animate && result.xpAfter > result.xpBefore) {
+    LaunchedEffect(animate, instant) {
+        if (instant) {
+            shownXp.snapTo(result.xpAfter.toFloat())
+        } else if (animate && result.xpAfter > result.xpBefore) {
             shownXp.animateTo(
                 result.xpAfter.toFloat(),
-                tween(durationMillis = 900, easing = FastOutSlowInEasing)
+                tween(durationMillis = 700, easing = FastOutSlowInEasing)
             )
         }
     }

@@ -55,14 +55,14 @@ object GameText {
         "off_spiked_shield" to "Spiked Shield",
         "off_medkit" to "Medkit",
         "off_banner" to "Banner",
-        "off_detonator" to "Detonator",
+        "off_detonator" to "Ember Drain",
         "off_cleanser" to "Cleanser",
         // Offhand abilities
         "def_tower" to "Tower Guard",
         "def_spiked" to "Spiked Guard",
         "def_medkit" to "Patch Up",
         "def_banner" to "Rally",
-        "def_detonate" to "Detonate",
+        "def_detonate" to "Ember Drain",
         "def_cleanse" to "Cleanse",
         // Enemy abilities
         "basic_slash" to "Slash",
@@ -138,8 +138,8 @@ object GameText {
         "off_tower_shield" to "A big shield, given to any ally.",
         "off_spiked_shield" to "A lighter shield for any ally that strikes back at attackers.",
         "off_medkit" to "Heal any ally.",
-        "off_banner" to "Pull all enemy attacks onto yourself, plus a small shield.",
-        "off_detonator" to "Blow up every Burn stack on the target for burst damage.",
+        "off_banner" to "Plant the flag on any ally: enemies attack them, and they get a small shield.",
+        "off_detonator" to "Strip all Burn off an ally and heal them for every stack removed.",
         "off_cleanser" to "Strip an ally's debuffs and add a small shield."
     )
 

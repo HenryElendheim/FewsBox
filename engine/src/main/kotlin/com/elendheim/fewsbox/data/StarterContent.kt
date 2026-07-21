@@ -269,14 +269,15 @@ object Offhands {
         )
     )
 
-    // 4. BANNER — taunt onto self + small shield. Protect the squishies.
+    // 4. BANNER — plant the taunt on any ally plus a small shield. Every
+    //    offhand is drag-to-a-teammate now, so the flag goes where you say.
     val BANNER = Offhand(
         id = "off_banner",
         iconId = "ic_off_banner",
         grantedAbility = Ability(
             id = "def_banner",
             iconId = "ic_def_banner",
-            targeting = Targeting.SELF,
+            targeting = Targeting.SINGLE_ALLY,
             effects = listOf(
                 Effect.Taunt(turns = 1),
                 Effect.GainShield(amount = 6)
@@ -284,18 +285,20 @@ object Offhands {
         )
     )
 
-    // 5. DETONATOR — consume Burn on the target for burst. Ember Blade's payoff.
+    // 5. EMBER DRAIN — strip all Burn off an ally, healing per stack removed.
+    //    (Offhands never hit enemies anymore; the old Detonator burst moves
+    //    into the weapon redesign.)
     val DETONATOR = Offhand(
         id = "off_detonator",
         iconId = "ic_off_detonator",
         grantedAbility = Ability(
             id = "def_detonate",
             iconId = "ic_def_detonate",
-            targeting = Targeting.SINGLE_ENEMY,
+            targeting = Targeting.SINGLE_ALLY,
             effects = listOf(
                 Effect.ConsumeStatus(
                     statusId = "burn",
-                    perStackEffect = Effect.DealDamage(multiplier = 0.8f, hits = 1, canCrit = false)
+                    perStackEffect = Effect.Heal(amount = 4)
                 )
             )
         )

@@ -59,6 +59,40 @@ Heroes earn XP from performance - damage dealt that level plus 5 for
 surviving - and level 1-5; levels unlock the kit itself (one weapon and
 two offhands at level 1, everything by level 5) plus small HP/ATK growth.
 
+## Kit overhaul (designing, not built yet)
+
+The next big drop. Decisions locked so far:
+
+- **Unlock ladder** - you start with Red alone and earn the roster in
+  order: Orange, Yellow, Green and Blue through the early campaign
+  (about levels 2, 5, 8, 12), then Violet is FREED from the level 25
+  boss fight (the grayscale captured her - the first boss is a rescue),
+  Ash defects at level 50, Silver at level 100 as the door to endless
+- **Five weapons and five offhands per hero**, all sidegrades: nothing
+  strictly better or worse than anything else, pure customization, no
+  gear power ladder
+- **Offhands never hit enemies** - they only affect your own team, and
+  every offhand can be dragged onto any teammate
+- **Red's weapons**: Sword (damage, 3-turn bleed, can crit), Crimson
+  Maul (heavy, sometimes stuns 1 turn), Cleaver (3 hits, 2-turn bleed),
+  Axe (decent damage, target deals 25% less for 3 turns), Pulse Cutter
+  (big sword, +1 damage per 1% of stored ult charge)
+- **Red's offhands**: Jagged Buckler (shield 8 + thorns), Adrenaline
+  Vial (below half HP: extra turn, otherwise heal 8), Wound Salt
+  (consume bleed on an ally? - pending redesign since offhands are
+  ally-only now), Annoying Pest (any ally taunts everything for 3 turns
+  and takes 15% less damage), War Cry (team deals +25% for 3 turns)
+- **Orange's weapons**: Ember Blade (starter, 2 burn for 3 turns, can
+  crit), Twin Torches (2 hits, 1 burn each), Flame Whip (hits the
+  target and the enemies adjacent to them; no neighbors means all 3
+  lashes land on the target), Cinder Fan (burn over time, crits if the
+  target is already burning), The Blazeborn Blade (heavy damage, applies
+  burn, crits against burning targets)
+- **Orange's offhands**: rework in progress - team-only, no enemy
+  damage; Ember Drain (strip burn off an ally, heal per stack) shipped
+  early as the Detonator replacement
+- **New statuses needed**: bleed (DoT distinct from burn and poison)
+
 ## Systems backlog
 
 - **Fourth party slot** - Party.MAX_SIZE is 3; the code iterates the party

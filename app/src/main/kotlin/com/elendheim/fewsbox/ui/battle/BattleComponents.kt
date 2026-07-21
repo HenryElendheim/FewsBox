@@ -15,8 +15,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,7 +50,6 @@ import com.elendheim.fewsbox.engine.model.ActiveStatus
 import com.elendheim.fewsbox.engine.model.CombatUnit
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.data.Statuses
-import com.elendheim.fewsbox.engine.ability.Ability
 import com.elendheim.fewsbox.engine.ability.Resolver
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.IconChip
@@ -168,6 +165,7 @@ fun UnitCard(
     isActing: Boolean = false,   // this unit's move is playing out right now
     flash: UnitFlash? = null,    // latest hit/heal/shield reaction to play
     turnsLeft: Int = 0,          // heroes with turns left get an underline
+    glowColor: Color? = null,    // halo behind the card while a drag hovers it
     floaties: List<Floaty>,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
@@ -249,6 +247,16 @@ fun UnitCard(
             .semantics { contentDescription = unit.name }
     ) {
         Box(contentAlignment = Alignment.Center) {
+            // The drop halo: lights up behind whoever the drag is hovering
+            // so there is never any doubt who receives it.
+            if (glowColor != null) {
+                Box(
+                    Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(glowColor.copy(alpha = 0.45f))
+                )
+            }
             unit.charge?.let {
                 ChargeRing(
                     progress = it.progress,
@@ -332,13 +340,16 @@ fun UnitCard(
                     .clip(RoundedCornerShape(2.dp))
                     .background(EnergyGold)
             )
-            Text(
-                "$turnsLeft",
-                color = EnergyGold,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.padding(top = 1.dp)
-            )
+            // One turn is the normal state; only banked extras get a number.
+            if (turnsLeft > 1) {
+                Text(
+                    "$turnsLeft",
+                    color = EnergyGold,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(top = 1.dp)
+                )
+            }
         }
     }
 }
@@ -369,58 +380,6 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
                         scaleY = 1f + 0.25f * (1f - progress)
                     }
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun AbilityButton(
-    ability: Ability,
-    selected: Boolean,
-    enabled: Boolean,
-    cooldownLeft: Int,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
-) {
-    val border = if (selected) Accent else Color.Transparent
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = tween(durationMillis = 80),
-        label = "abilityPress"
-    )
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
-            .alpha(if (enabled) 1f else 0.35f)
-            .clip(RoundedCornerShape(12.dp))
-            .border(2.dp, border, RoundedCornerShape(12.dp))
-            // Long-press info works even when the button is unaffordable.
-            .combinedClickable(
-                interactionSource = interaction,
-                indication = null,
-                enabled = true,
-                onClick = { if (enabled) onClick() },
-                onLongClick = onLongClick
-            )
-            .padding(6.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            IconChip(ability.iconId, size = 46)
-            if (cooldownLeft > 0) {
-                Box(
-                    Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(Color(0xAA14141A)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("$cooldownLeft", color = TextMuted, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                }
-            }
         }
     }
 }
