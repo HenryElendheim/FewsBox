@@ -486,7 +486,7 @@ fun UnitCard(
                         .align(Alignment.TopEnd)
                         .requiredSize(38.dp)
                         .graphicsLayer {
-                            translationX = with(this) { 32.dp.toPx() }
+                            translationX = with(this) { 28.dp.toPx() }
                             translationY = with(this) { 4.dp.toPx() }
                             rotationZ = if (isActing) -14f else 0f
                         }
