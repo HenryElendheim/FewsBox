@@ -114,12 +114,12 @@ object GameText {
         // Ultimates
         "ult_red" to "Berserk",
         "ult_orange" to "Inferno",
-        "ult_yellow" to "Sunburst",
-        "ult_green" to "Razor Storm",
-        "ult_blue" to "Phalanx",
-        "ult_violet" to "Terror",
-        "ult_ash" to "Ashfall",
-        "ult_silver" to "Tempest",
+        "ult_yellow" to "Photosynthesis",
+        "ult_green" to "Lightning",
+        "ult_blue" to "Unbreakable",
+        "ult_violet" to "Shockify",
+        "ult_ash" to "Dustify",
+        "ult_silver" to "Drainify",
         // Statuses
         "burn" to "Burn",
         "poison" to "Poison",
