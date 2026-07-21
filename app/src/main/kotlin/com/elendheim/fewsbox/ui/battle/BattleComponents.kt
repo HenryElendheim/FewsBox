@@ -12,6 +12,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.semantics.contentDescription
@@ -55,6 +57,7 @@ import com.elendheim.fewsbox.engine.model.CombatUnit
 import com.elendheim.fewsbox.engine.model.Team
 import com.elendheim.fewsbox.data.Statuses
 import com.elendheim.fewsbox.engine.ability.Resolver
+import com.elendheim.fewsbox.ui.GameArt
 import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.IconChip
 import com.elendheim.fewsbox.ui.Prefs
@@ -498,6 +501,23 @@ fun UnitCard(
                             .background(washColor.copy(alpha = washAlpha.value))
                     )
                 }
+            }
+            // A hero with drawn weapon art holds it: grip anchored at the
+            // block's shoulder, blade pointing up and out at the enemy line.
+            val weaponArt = GameArt[unit.abilities.getOrNull(0)?.iconId]
+            if (weaponArt != null && GameIcons.heroColor(unit.iconId) != null) {
+                Image(
+                    painter = painterResource(weaponArt),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .requiredSize(38.dp)
+                        .graphicsLayer {
+                            translationX = 26f
+                            translationY = -20f
+                            rotationZ = if (isActing) -14f else 0f
+                        }
+                )
             }
             if (unit.shield > 0) {
                 Box(
