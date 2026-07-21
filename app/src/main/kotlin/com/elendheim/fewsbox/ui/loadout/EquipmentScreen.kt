@@ -40,6 +40,7 @@ import com.elendheim.fewsbox.data.Loadout
 import com.elendheim.fewsbox.data.Offhands
 import com.elendheim.fewsbox.data.Progression
 import com.elendheim.fewsbox.data.Weapons
+import com.elendheim.fewsbox.ui.GameIcons
 import com.elendheim.fewsbox.ui.GameText
 import com.elendheim.fewsbox.ui.IconChip
 import com.elendheim.fewsbox.ui.InfoContent
@@ -49,6 +50,7 @@ import com.elendheim.fewsbox.ui.theme.Accent
 import com.elendheim.fewsbox.ui.theme.EnergyGold
 import com.elendheim.fewsbox.ui.theme.HpGreen
 import com.elendheim.fewsbox.ui.theme.Ink
+import com.elendheim.fewsbox.ui.theme.Panel
 import com.elendheim.fewsbox.ui.theme.TextBright
 import com.elendheim.fewsbox.ui.theme.TextMuted
 
