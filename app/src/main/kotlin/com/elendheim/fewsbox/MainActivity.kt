@@ -26,6 +26,8 @@ import com.elendheim.fewsbox.ui.battle.BattleViewModel
 import com.elendheim.fewsbox.ui.loadout.LoadoutScreen
 import com.elendheim.fewsbox.ui.results.HeroResult
 import com.elendheim.fewsbox.ui.results.ResultsScreen
+import com.elendheim.fewsbox.ui.shop.Shop
+import com.elendheim.fewsbox.ui.shop.ShopScreen
 import com.elendheim.fewsbox.ui.theme.FewsBoxTheme
 
 class MainActivity : ComponentActivity() {
@@ -42,7 +44,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { LOADOUT, BATTLE, RESULTS }
+private enum class Screen { LOADOUT, BATTLE, RESULTS, SHOP }
 
 @Composable
 fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
@@ -58,19 +60,44 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
     var selectedIds by remember { mutableStateOf(saved.selectedIds) }
     var unlockedIds by remember { mutableStateOf(saved.unlockedIds) }
     var endlessBest by remember { mutableIntStateOf(saved.endlessBest) }
+    var fews by remember { mutableIntStateOf(saved.fews) }
+    var ownedGear by remember { mutableStateOf(saved.ownedGear) }
+    var consumables by remember { mutableStateOf(saved.consumables) }
     var battleLevel by remember { mutableIntStateOf(0) }
     var lastStars by remember { mutableIntStateOf(0) }
     var lastResults by remember { mutableStateOf<List<HeroResult>>(emptyList()) }
     var lastUnlockName by remember { mutableStateOf<String?>(null) }
+    var lastFewsPayouts by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var lastFewsTotal by remember { mutableIntStateOf(0) }
 
     val heroLevels = remember(heroXp) { heroXp.mapValues { Progression.levelFor(it.value) } }
     val campaignBeaten = (bestStars[Battles.FINAL_BOSS_INDEX] ?: 0) > 0
 
+    fun startFight(level: Int) {
+        val party = roster.filter { member -> member.hero.id in selectedIds }
+        battleLevel = level
+        vm.bringConsumables(consumables.mapValues { minOf(5, it.value) })
+        vm.startLevel(level, party, heroLevels)
+        screen = Screen.BATTLE
+    }
+
+    fun bankConsumables() {
+        // Whatever wasn't used in battle goes back on the shelf.
+        val remaining = vm.consumablesRemaining()
+        consumables = consumables.mapValues { (id, count) ->
+            val brought = minOf(5, count)
+            (count - brought) + (remaining[id] ?: 0)
+        }
+    }
+
     // Write-through save: any change persists.
-    LaunchedEffect(maxUnlocked, selectedLevel, bestStars, heroXp, roster, selectedIds, unlockedIds, endlessBest) {
+    LaunchedEffect(
+        maxUnlocked, selectedLevel, bestStars, heroXp, roster, selectedIds,
+        unlockedIds, endlessBest, fews, ownedGear, consumables
+    ) {
         SaveStore.save(
             context, maxUnlocked, selectedLevel, bestStars, heroXp,
-            selectedIds, roster, unlockedIds, endlessBest
+            selectedIds, roster, unlockedIds, endlessBest, fews, ownedGear, consumables
         )
     }
 
@@ -95,20 +122,35 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
             onLoadoutChange = { changed: Loadout ->
                 roster = roster.map { if (it.hero.id == changed.hero.id) changed else it }
             },
-            onFight = {
-                val party = roster.filter { member -> member.hero.id in selectedIds }
-                battleLevel = selectedLevel
-                vm.startLevel(selectedLevel, party, heroLevels)
-                screen = Screen.BATTLE
-            },
+            onFight = { startFight(selectedLevel) },
             endlessBest = endlessBest,
             endlessUnlocked = campaignBeaten,
-            onPlayEndless = {
-                val party = roster.filter { member -> member.hero.id in selectedIds }
-                battleLevel = Battles.CAMPAIGN_LEVELS + endlessBest
-                vm.startLevel(battleLevel, party, heroLevels)
-                screen = Screen.BATTLE
-            }
+            onPlayEndless = { startFight(Battles.CAMPAIGN_LEVELS + endlessBest) },
+            fews = fews,
+            ownedGear = ownedGear,
+            onOpenShop = { screen = Screen.SHOP }
+        )
+
+        Screen.SHOP -> ShopScreen(
+            fews = fews,
+            roster = roster,
+            ownedGear = ownedGear,
+            consumables = consumables,
+            onBuyGear = { id ->
+                val price = Shop.priceFor(id)
+                if (fews >= price && id !in ownedGear) {
+                    fews -= price
+                    ownedGear = ownedGear + id
+                }
+            },
+            onBuyConsumable = { id ->
+                val price = Shop.CONSUMABLE_BY_ID[id]?.price ?: return@ShopScreen
+                if (fews >= price) {
+                    fews -= price
+                    consumables = consumables + (id to (consumables[id] ?: 0) + 1)
+                }
+            },
+            onBack = { screen = Screen.LOADOUT }
         )
 
         Screen.BATTLE -> BattleScreen(
@@ -123,9 +165,25 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                 val stars = if (isEndless) 0 else {
                     (3 - (selectedIds.size - survivorIds.size)).coerceIn(1, 3)
                 }
+                val firstClear = !isEndless && (bestStars[battleLevel] ?: 0) == 0
                 if (!isEndless) {
                     bestStars = bestStars + (battleLevel to maxOf(bestStars[battleLevel] ?: 0, stars))
                 }
+
+                // The payday: 15 a star on a first clear with the third star
+                // worth 20; replays pay a flat 15 a star; endless pays for
+                // distance. Thief drops ride on top.
+                val payouts = when {
+                    isEndless -> listOf(30)
+                    firstClear -> List(stars) { i -> if (i == 2) 20 else 15 }
+                    else -> List(stars) { 15 }
+                }.toMutableList()
+                val stolen = vm.fewsEarned()
+                if (stolen > 0) payouts.add(stolen)
+                lastFewsPayouts = payouts
+                lastFewsTotal = payouts.sum()
+                fews += lastFewsTotal
+                bankConsumables()
 
                 // XP is earned, not granted: what you dealt this level, plus
                 // a flat 5 for walking out alive.
@@ -174,14 +232,19 @@ fun FewsBoxApp(vm: BattleViewModel = viewModel()) {
                 }
                 screen = Screen.RESULTS
             },
-            onDefeat = { screen = Screen.LOADOUT }
+            onDefeat = {
+                bankConsumables()
+                screen = Screen.LOADOUT
+            }
         )
 
         Screen.RESULTS -> ResultsScreen(
             stars = lastStars,
             heroResults = lastResults,
             unlockedHeroName = lastUnlockName,
-            onContinue = { screen = Screen.LOADOUT }
+            onContinue = { screen = Screen.LOADOUT },
+            fewsPayouts = lastFewsPayouts,
+            fewsTotal = lastFewsTotal
         )
     }
 }

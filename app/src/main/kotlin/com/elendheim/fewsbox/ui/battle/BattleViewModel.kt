@@ -104,6 +104,64 @@ class BattleViewModel : ViewModel() {
     fun survivors(): Set<String> =
         state?.players?.map { it.id }?.toSet() ?: emptySet()
 
+    /** Fews shaken loose in battle by the Thief enchant. */
+    fun fewsEarned(): Int = state?.fewsEarned ?: 0
+
+    // --- Workshop consumables: up to 5 of each per battle, each usable
+    // --- once per round. The tray lives in the snapshot so UI stays dumb.
+    data class ConsumableSlot(val id: String, val remaining: Int, val usedThisRound: Boolean)
+
+    private val consumablesBrought = mutableMapOf<String, Int>()
+    private val consumablesUsedRound = mutableSetOf<String>()
+    private var usedRoundMarker = 1
+
+    fun bringConsumables(counts: Map<String, Int>) {
+        consumablesBrought.clear()
+        counts.forEach { (id, count) -> if (count > 0) consumablesBrought[id] = count.coerceAtMost(5) }
+        consumablesUsedRound.clear()
+    }
+
+    /** What's left in the tray, for banking back into the wallet after. */
+    fun consumablesRemaining(): Map<String, Int> = consumablesBrought.toMap()
+
+    fun consumableSlots(): List<ConsumableSlot> {
+        val round = state?.round ?: 1
+        if (round != usedRoundMarker) {
+            usedRoundMarker = round
+            consumablesUsedRound.clear()
+        }
+        return consumablesBrought.map { (id, left) ->
+            ConsumableSlot(id, left, id in consumablesUsedRound)
+        }
+    }
+
+    /** Spends one consumable. Returns how many were actually consumed (0 or 1). */
+    fun useConsumable(id: String): Boolean {
+        val s = state ?: return false
+        if (s.phase != TurnPhase.PLAYER_INPUT) return false
+        val snap = _snapshot.value
+        if (snap.enemyTurnRunning || snap.stageClearing) return false
+        val round = s.round
+        if (round != usedRoundMarker) {
+            usedRoundMarker = round
+            consumablesUsedRound.clear()
+        }
+        val left = consumablesBrought[id] ?: 0
+        if (left <= 0 || id in consumablesUsedRound) return false
+
+        val e = engine ?: return false
+        when (id) {
+            "con_spark" -> e.grantUltCharge(s, 150)
+            "con_bandage" -> e.healParty(s, 12)
+            "con_ironskin" -> e.shieldParty(s, 8)
+            else -> return false
+        }
+        consumablesBrought[id] = left - 1
+        consumablesUsedRound.add(id)
+        push()
+        return true
+    }
+
     private fun maybeAdvanceStage() {
         val s = state ?: return
         val snap = _snapshot.value

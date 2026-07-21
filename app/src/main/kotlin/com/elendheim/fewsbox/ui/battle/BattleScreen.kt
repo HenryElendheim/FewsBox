@@ -361,7 +361,36 @@ fun BattleScreen(
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            // Workshop tray: what you brought, one use of each per round.
+            val slots = snapshot.version.let { vm.consumableSlots() }
+            if (slots.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (slot in slots) {
+                        val usable = slot.remaining > 0 && !slot.usedThisRound && !inputLocked
+                        val label = when (slot.id) {
+                            "con_spark" -> "SPARK"
+                            "con_bandage" -> "BANDAGE"
+                            "con_ironskin" -> "IRON"
+                            else -> slot.id.uppercase()
+                        }
+                        Text(
+                            "$label x${slot.remaining}",
+                            color = if (usable) EnergyGold else TextMuted,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color(0xFF26242F))
+                                .clickable(enabled = usable) { vm.useConsumable(slot.id) }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
 
             Box(
                 Modifier

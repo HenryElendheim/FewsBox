@@ -38,6 +38,21 @@ class BattleEngine(
         tickPlayerPhaseStart(state)
     }
 
+    // --- Consumable hooks: instant, no turn cost, driven by the app ---
+
+    fun grantUltCharge(state: BattleState, tenths: Int) = resolver.gainPartyUlt(state, tenths)
+
+    fun healParty(state: BattleState, amount: Int) {
+        for (player in state.players) resolver.healUnit(player, amount)
+    }
+
+    fun shieldParty(state: BattleState, amount: Int) {
+        for (player in state.players) {
+            player.shield += amount
+            emit(CombatEvent.ShieldGained(player.id, amount))
+        }
+    }
+
     /**
      * One player unit uses one ability. Returns false if the action is not
      * legal right now (wrong phase, dead/spent actor, cooldown, or an

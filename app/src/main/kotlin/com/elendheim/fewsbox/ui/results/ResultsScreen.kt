@@ -72,11 +72,16 @@ fun ResultsScreen(
     stars: Int,
     heroResults: List<HeroResult>,
     unlockedHeroName: String?,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    fewsPayouts: List<Int> = emptyList(),
+    fewsTotal: Int = 0
 ) {
-    // 0 = nothing shown yet; counts up as stars land, then rows appear.
+    // 0 = nothing shown yet; counts up as stars land, then the fews chips
+    // show their amounts and collapse into one total, then rows appear.
     // Pressing CONTINUE mid-reveal fast-forwards everything to done.
     var starsShown by remember { mutableIntStateOf(0) }
+    var fewsShown by remember { mutableIntStateOf(0) }
+    var fewsMerged by remember { mutableStateOf(false) }
     var rowsVisible by remember { mutableStateOf(false) }
     var revealDone by remember { mutableStateOf(false) }
     var skipped by remember { mutableStateOf(false) }
@@ -85,6 +90,8 @@ fun ResultsScreen(
     LaunchedEffect(skipped) {
         if (skipped) {
             starsShown = stars
+            fewsShown = fewsPayouts.size
+            fewsMerged = true
             rowsVisible = true
             revealDone = true
             return@LaunchedEffect
@@ -95,6 +102,14 @@ fun ResultsScreen(
                 delay(240)
                 starsShown++
             }
+        }
+        repeat(fewsPayouts.size) {
+            delay(200)
+            fewsShown++
+        }
+        if (fewsPayouts.isNotEmpty()) {
+            delay(350)
+            fewsMerged = true
         }
         delay(200)
         rowsVisible = true
@@ -134,6 +149,44 @@ fun ResultsScreen(
                 Spacer(Modifier.height(28.dp))
             } else {
                 Spacer(Modifier.height(10.dp))
+            }
+
+            // The payday: each source shows its cut, then they fuse into one
+            // number in the center. The last beat is the satisfying one.
+            if (fewsTotal > 0) {
+                Box(Modifier.height(34.dp), contentAlignment = Alignment.Center) {
+                    if (!fewsMerged) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            fewsPayouts.forEachIndexed { i, amount ->
+                                if (i < fewsShown) {
+                                    Text(
+                                        "+$amount",
+                                        color = EnergyGold,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        val pop = remember { Animatable(1.6f) }
+                        LaunchedEffect(Unit) {
+                            pop.animateTo(
+                                1f,
+                                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+                            )
+                        }
+                        Text(
+                            "+$fewsTotal FEWS",
+                            color = EnergyGold,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 2.sp,
+                            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
             }
 
             for (result in heroResults) {
