@@ -210,6 +210,15 @@ fun BattleScreen(
     val inputLocked = snapshot.enemyTurnRunning || snapshot.stageClearing ||
         battle.phase != TurnPhase.PLAYER_INPUT
 
+    // While the tutorial teaches, only the taught move works: round 1 is
+    // the attack drag, round 2 is the offhand tap, then hands off. Reads
+    // live state because gesture callbacks outlive recompositions.
+    fun tutorialStep(): Int {
+        val snap = vm.snapshot.value
+        val b = snap.battle ?: return 0
+        return if (snap.levelIndex == 0 && !Prefs.tutorialDone) b.round.coerceAtMost(3) else 0
+    }
+
     fun canAct(actor: CombatUnit, abilityIndex: Int): Boolean {
         val ability = actor.abilities.getOrNull(abilityIndex) ?: return false
         return battle.actionsLeft(actor) > 0 && actor.cooldownLeft(ability.id) == 0
@@ -218,6 +227,7 @@ fun BattleScreen(
     // Tap a hero: their offhand lands on themselves.
     fun tapHero(hero: CombatUnit) {
         if (inputLocked || !hero.isAlive) return
+        if (tutorialStep() == 1) return
         val offhand = hero.abilities.getOrNull(1) ?: return
         if (!canAct(hero, 1)) return
         val targets = if (offhand.targeting == Targeting.SELF) emptyList() else listOf(hero.id)
@@ -229,14 +239,17 @@ fun BattleScreen(
         val b = vm.snapshot.value.battle ?: return
         val source = b.unitOrNull(sourceId) ?: return
         if (!source.isAlive) return
+        val step = tutorialStep()
         val enemyId = enemyRects.entries.firstOrNull { it.value.contains(pos) }?.key
         if (enemyId != null && b.unitOrNull(enemyId)?.isAlive == true) {
+            if (step == 2) return  // round two teaches the offhand tap
             val weapon = source.abilities.getOrNull(0) ?: return
             vm.playerAction(source.id, weapon.id, listOf(enemyId))
             return
         }
         val allyId = playerRects.entries.firstOrNull { it.value.contains(pos) }?.key
         if (allyId != null && b.unitOrNull(allyId)?.isAlive == true) {
+            if (step == 1) return  // round one teaches the attack drag
             val offhand = source.abilities.getOrNull(1) ?: return
             val targets = if (offhand.targeting == Targeting.SELF) emptyList() else listOf(allyId)
             // A self-only offhand dragged onto someone else just fizzles.

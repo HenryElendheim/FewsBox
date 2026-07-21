@@ -283,13 +283,9 @@ object GameText {
     //  Ability text with real numbers
     // ------------------------------------------------------------------
 
-    const val ULT_NOTE = "Fired by dragging the full party meter onto the hero; it does not use up their turn. " +
-        "The meter gains 5% per attack, 3% per hit taken, and 15% when one hit costs over half a hero's max HP"
-
     fun describeAbility(ability: Ability, attack: Int, isUltimate: Boolean = false): List<String> {
         val lines = ability.effects.map { describeEffect(it, attack) }.toMutableList()
         if (ability.cooldown > 0) lines.add("Ready again after ${ability.cooldown} turns")
-        if (isUltimate) lines.add(ULT_NOTE)
         return lines
     }
 

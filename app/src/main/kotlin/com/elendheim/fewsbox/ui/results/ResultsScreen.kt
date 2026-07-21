@@ -211,12 +211,6 @@ fun ResultsScreen(
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
                     )
-                    Text(
-                        "A grayscale boss, fighting for the colors now",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
             }
 

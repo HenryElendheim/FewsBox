@@ -170,18 +170,29 @@ fun HpBar(hp: Int, maxHp: Int, modifier: Modifier = Modifier) {
         label = "hp"
     )
     val barColor = if (fraction < 0.35f) HpLow else HpGreen
+    // Lost health shows as dark red behind the bar, and the exact number
+    // sits on top in white — no guessing.
     Box(
         modifier = modifier
-            .height(7.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(Ink)
+            .height(12.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFF551418)),
+        contentAlignment = Alignment.Center
     ) {
         Box(
             Modifier
+                .align(Alignment.CenterStart)
                 .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                .height(7.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .height(12.dp)
+                .clip(RoundedCornerShape(6.dp))
                 .background(barColor)
+        )
+        Text(
+            "$hp/$maxHp",
+            color = Color.White,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Black,
+            style = TextStyle(shadow = Shadow(color = Color(0xCC000000), blurRadius = 4f))
         )
     }
 }
@@ -515,11 +526,11 @@ fun UnitCard(
                 }
             }
             ImpactOverlay(impact)
-            // Numbers anchor at the bottom of the block, directly above the
-            // health bar, so what you lost and what's left read together.
+            // Numbers rise from above the character's head, full strength,
+            // never hiding behind the block.
             Box(
                 Modifier.requiredSize(64.dp),
-                contentAlignment = Alignment.BottomCenter
+                contentAlignment = Alignment.TopCenter
             ) {
                 FloatingNumbers(floaties)
             }
@@ -584,8 +595,11 @@ private fun FloatingNumbers(floaties: List<Floaty>) {
                 ),
                 modifier = Modifier
                     .graphicsLayer {
-                        translationY = -34f * progress
-                        alpha = 1f - progress * 0.7f
+                        translationY = -30f - 34f * progress
+                        // Full opacity for the whole ride, fading only at
+                        // the very end.
+                        alpha = if (progress < 0.7f) 1f
+                        else 1f - (progress - 0.7f) / 0.3f
                         scaleX = 1f + 0.25f * (1f - progress)
                         scaleY = 1f + 0.25f * (1f - progress)
                     }
