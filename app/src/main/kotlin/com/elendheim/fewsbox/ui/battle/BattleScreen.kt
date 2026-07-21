@@ -94,6 +94,7 @@ fun BattleScreen(
     // shake, all keyed off the engine's combat events.
     val floaties = remember { mutableStateMapOf<String, List<Floaty>>() }
     val flashes = remember { mutableStateMapOf<String, UnitFlash>() }
+    val impacts = remember { mutableStateMapOf<String, ImpactFx>() }
     val shake = remember { Animatable(0f) }
 
     // Geometry for the two drags (hero commands and the ult bar): where
@@ -147,6 +148,17 @@ fun BattleScreen(
                     launch {
                         delay(650)
                         if (actingUnitId == event.actorId) actingUnitId = null
+                    }
+                    // Every item strikes in its own shape and color.
+                    impactStyleFor(event.abilityId)?.let { (style, color) ->
+                        for (targetId in event.targetIds) {
+                            val fx = ImpactFx(flashKey++, style, color)
+                            impacts[targetId] = fx
+                            launch {
+                                delay(500)
+                                if (impacts[targetId]?.key == fx.key) impacts.remove(targetId)
+                            }
+                        }
                     }
                     val actor = vm.snapshot.value.battle?.unitOrNull(event.actorId)
                     if (actor != null && actor.ultimateId == event.abilityId) {
@@ -285,6 +297,7 @@ fun BattleScreen(
                         isActiveActor = false,
                         isActing = enemy.id == actingUnitId,
                         flash = flashes[enemy.id],
+                        impact = impacts[enemy.id],
                         glowColor = if (enemy.id == heroDragTargetId && enemiesTargetable) DangerRed else null,
                         floaties = floaties[enemy.id] ?: emptyList(),
                         onClick = {},
@@ -344,6 +357,7 @@ fun BattleScreen(
                             isActiveActor = player.id == heroDragSourceId,
                             isActing = player.id == actingUnitId,
                             flash = flashes[player.id],
+                            impact = impacts[player.id],
                             glowColor = when {
                                 player.id == ultDragTargetId -> EnergyGold
                                 player.id == heroDragTargetId && alliesTargetable -> HpGreen

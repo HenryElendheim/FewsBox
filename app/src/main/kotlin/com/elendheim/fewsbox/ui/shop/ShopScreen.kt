@@ -221,11 +221,7 @@ private fun ArmoryTab(
                                 )
                             }
                             Text(
-                                when {
-                                    starter -> "FREE"
-                                    owned -> "OWNED"
-                                    else -> "$price"
-                                },
+                                if (owned) "OWNED" else "$price",
                                 color = when {
                                     owned -> HpGreen
                                     affordable -> EnergyGold

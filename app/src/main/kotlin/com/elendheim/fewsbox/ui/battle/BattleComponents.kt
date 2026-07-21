@@ -37,9 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.semantics.contentDescription
@@ -72,6 +74,93 @@ data class Floaty(val key: Long, val text: String, val color: Color, val label: 
 /** A one-shot reaction on a unit card: recoil on a hit, glow on help. */
 enum class FlashKind { HIT, HEAL, SHIELD }
 data class UnitFlash(val key: Long, val kind: FlashKind)
+
+/** A weapon or offhand's signature strike animation, drawn over the target. */
+enum class ImpactStyle { SLASH, SMASH, FIRE, MULTI, MAGIC, WAVE, BUFF }
+data class ImpactFx(val key: Long, val style: ImpactStyle, val color: Color)
+
+private val RedC = Color(0xFFE5484D)
+private val OrangeC = Color(0xFFE8823D)
+private val GoldC = Color(0xFFFFD166)
+private val GreenC = Color(0xFF6FCF97)
+private val BlueC = Color(0xFF4AA3FF)
+private val VioletC = Color(0xFFB68CFF)
+private val GrayC = Color(0xFFC9C9C9)
+
+/** Every ability id maps to a strike look; offhands flare in their color. */
+fun impactStyleFor(abilityId: String): Pair<ImpactStyle, Color>? = when (abilityId) {
+    "atk_red_sword", "atk_red_axe" -> ImpactStyle.SLASH to RedC
+    "atk_red_maul" -> ImpactStyle.SMASH to RedC
+    "atk_red_cleaver" -> ImpactStyle.MULTI to RedC
+    "atk_red_pulse" -> ImpactStyle.SMASH to GoldC
+    "atk_orange_ember", "atk_orange_fan", "atk_orange_blaze" -> ImpactStyle.FIRE to OrangeC
+    "atk_orange_torches", "atk_orange_whip" -> ImpactStyle.MULTI to OrangeC
+    "atk_yellow_siphon" -> ImpactStyle.WAVE to GoldC
+    "atk_yellow_bell" -> ImpactStyle.BUFF to GoldC
+    "atk_yellow_lance", "atk_yellow_lifeline" -> ImpactStyle.SLASH to GoldC
+    "atk_yellow_karma" -> ImpactStyle.SMASH to GoldC
+    "atk_green_fan", "atk_green_scythe" -> ImpactStyle.SLASH to GreenC
+    "atk_green_volley" -> ImpactStyle.MULTI to GreenC
+    "atk_green_tangle" -> ImpactStyle.WAVE to GreenC
+    "atk_green_blast" -> ImpactStyle.SMASH to GreenC
+    "atk_blue_hammer", "atk_blue_anchor", "atk_blue_breakwater" -> ImpactStyle.SMASH to BlueC
+    "atk_blue_pike" -> ImpactStyle.SLASH to BlueC
+    "atk_blue_undertow" -> ImpactStyle.WAVE to BlueC
+    "atk_violet_needle", "atk_violet_reaper" -> ImpactStyle.SLASH to VioletC
+    "atk_violet_fang" -> ImpactStyle.MULTI to VioletC
+    "atk_violet_gravebind", "atk_violet_nightfall" -> ImpactStyle.MAGIC to VioletC
+    "atk_ash_cinder", "atk_ash_smoke", "ash_cloud", "cinder_spit" -> ImpactStyle.FIRE to GrayC
+    "atk_ash_veil", "basic_slash" -> ImpactStyle.SLASH to GrayC
+    "atk_silver_edge", "atk_silver_lash" -> ImpactStyle.MULTI to Color(0xFFF7F7F7)
+    "atk_silver_spike", "doom_bolt", "null_wave" -> ImpactStyle.MAGIC to GrayC
+    "venom_spit" -> ImpactStyle.MULTI to GreenC
+    "crushing_blow" -> ImpactStyle.SMASH to Color(0xFFEDEDED)
+    "silver_storm" -> ImpactStyle.WAVE to Color(0xFFF7F7F7)
+    "ult_red" -> ImpactStyle.SMASH to RedC
+    "ult_orange", "ult_ash" -> ImpactStyle.FIRE to OrangeC
+    "ult_yellow" -> ImpactStyle.BUFF to GoldC
+    "ult_green" -> ImpactStyle.BUFF to GreenC
+    "ult_blue" -> ImpactStyle.BUFF to BlueC
+    "ult_violet" -> ImpactStyle.MAGIC to VioletC
+    "ult_silver" -> ImpactStyle.WAVE to Color(0xFFF7F7F7)
+    else -> when {
+        // Offhands flare in their owner color: def_red_*, def_blue_*...
+        abilityId.startsWith("def_red_") -> ImpactStyle.BUFF to RedC
+        abilityId.startsWith("def_orange_") -> ImpactStyle.BUFF to OrangeC
+        abilityId.startsWith("def_yellow_") -> ImpactStyle.BUFF to GoldC
+        abilityId.startsWith("def_green_") -> ImpactStyle.BUFF to GreenC
+        abilityId.startsWith("def_blue_") -> ImpactStyle.BUFF to BlueC
+        abilityId.startsWith("def_violet_") -> ImpactStyle.BUFF to VioletC
+        else -> null
+    }
+}
+
+/** How a status wears on the card: spikes, orbs, rings, glows, haze. */
+private enum class AuraStyle { SPIKES, ORB, RING, GLOW, HAZE }
+
+private val auras: Map<String, Pair<Color, AuraStyle>> = mapOf(
+    "thorns" to (BlueC to AuraStyle.SPIKES),
+    "counter" to (OrangeC to AuraStyle.SPIKES),
+    "fire_shield" to (OrangeC to AuraStyle.ORB),
+    "bubble" to (Color(0xFF9BD2FF) to AuraStyle.ORB),
+    "anger" to (RedC to AuraStyle.ORB),
+    "reflect" to (GreenC to AuraStyle.RING),
+    "guard" to (BlueC to AuraStyle.RING),
+    "pest_guard" to (GoldC to AuraStyle.RING),
+    "ward" to (VioletC to AuraStyle.RING),
+    "immunity" to (GoldC to AuraStyle.RING),
+    "echo" to (GreenC to AuraStyle.RING),
+    "regen" to (GreenC to AuraStyle.GLOW),
+    "kiss" to (Color(0xFFFF8FB1) to AuraStyle.GLOW),
+    "war_cry" to (RedC to AuraStyle.GLOW),
+    "rally" to (RedC to AuraStyle.GLOW),
+    "spite" to (VioletC to AuraStyle.GLOW),
+    "keen" to (Color(0xFFF7F7F7) to AuraStyle.GLOW),
+    "ignite" to (OrangeC to AuraStyle.GLOW),
+    "omen" to (VioletC to AuraStyle.GLOW),
+    "dodge" to (Color(0xFF8B8797) to AuraStyle.HAZE),
+    "cloak" to (VioletC to AuraStyle.HAZE)
+)
 
 @Composable
 fun HpBar(hp: Int, maxHp: Int, modifier: Modifier = Modifier) {
@@ -159,6 +248,104 @@ fun ChargeRing(progress: Float, ready: Boolean, modifier: Modifier = Modifier, c
     }
 }
 
+/** The card's persistent halo for whichever visual status it carries. */
+@Composable
+private fun StatusAura(unit: CombatUnit) {
+    val spec = unit.statuses.firstNotNullOfOrNull { auras[it.defId] } ?: return
+    val (color, style) = spec
+    val pulse by rememberInfiniteTransition(label = "aura").animateFloat(
+        initialValue = 0.55f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 900), RepeatMode.Reverse),
+        label = "auraPulse"
+    )
+    Canvas(Modifier.size(68.dp)) {
+        val r = size.minDimension / 2f
+        val c = center
+        when (style) {
+            AuraStyle.ORB -> {
+                drawCircle(color.copy(alpha = 0.10f + 0.16f * pulse), r)
+                drawCircle(color.copy(alpha = 0.6f * pulse), r - 2.dp.toPx(), style = Stroke(2.5.dp.toPx()))
+            }
+            AuraStyle.RING ->
+                drawCircle(color.copy(alpha = 0.25f + 0.5f * pulse), r - 2.dp.toPx(), style = Stroke(3.dp.toPx()))
+            AuraStyle.GLOW -> drawCircle(color.copy(alpha = 0.30f * pulse), r)
+            AuraStyle.HAZE -> {
+                drawCircle(color.copy(alpha = 0.16f * pulse), r)
+                drawCircle(color.copy(alpha = 0.12f * pulse), r * 0.7f, center = Offset(c.x + 6f, c.y - 6f))
+            }
+            AuraStyle.SPIKES -> repeat(8) { i ->
+                rotate(i * 45f, c) {
+                    drawLine(
+                        color.copy(alpha = 0.45f + 0.4f * pulse),
+                        start = Offset(c.x, c.y - r + 3.dp.toPx()),
+                        end = Offset(c.x, c.y - r - 3.dp.toPx()),
+                        strokeWidth = 4.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One weapon strike playing out over the card, styled per item. */
+@Composable
+private fun ImpactOverlay(impact: ImpactFx?) {
+    if (impact == null) return
+    val progress = remember(impact.key) { Animatable(0f) }
+    LaunchedEffect(impact.key) {
+        progress.snapTo(0f)
+        progress.animateTo(1f, tween(durationMillis = 450, easing = FastOutSlowInEasing))
+    }
+    val p = progress.value
+    if (p >= 1f) return
+    val color = impact.color
+    Canvas(Modifier.requiredSize(64.dp)) {
+        val a = 1f - p
+        val c = center
+        val r = size.minDimension / 2f
+        when (impact.style) {
+            ImpactStyle.SLASH -> {
+                val len = size.width * (0.3f + 0.9f * p)
+                drawLine(color.copy(alpha = a), Offset(c.x - len / 2, c.y - len / 2),
+                    Offset(c.x + len / 2, c.y + len / 2), 5.dp.toPx(), StrokeCap.Round)
+                drawLine(color.copy(alpha = a * 0.6f), Offset(c.x + len / 2, c.y - len / 2),
+                    Offset(c.x - len / 2, c.y + len / 2), 3.dp.toPx(), StrokeCap.Round)
+            }
+            ImpactStyle.SMASH -> {
+                drawCircle(color.copy(alpha = a), r * p, style = Stroke(2.dp.toPx() + 5.dp.toPx() * a))
+                drawCircle(color.copy(alpha = a * 0.4f), r * p * 0.6f)
+            }
+            ImpactStyle.FIRE -> {
+                drawCircle(color.copy(alpha = a * 0.55f), r * (0.4f + 0.6f * p))
+                drawCircle(Color(0xFFFFF3C4).copy(alpha = a * 0.5f), r * 0.3f * a)
+            }
+            ImpactStyle.MULTI -> repeat(3) { i ->
+                val t = (p * 3f - i).coerceIn(0f, 1f)
+                if (t > 0f) drawCircle(
+                    color.copy(alpha = 1f - t),
+                    4.dp.toPx() + 6.dp.toPx() * t,
+                    center = Offset(c.x + (i - 1) * 14.dp.toPx(), c.y + (i - 1) * 8.dp.toPx())
+                )
+            }
+            ImpactStyle.MAGIC -> rotate(90f * p, c) {
+                drawLine(color.copy(alpha = a), Offset(c.x, c.y - r * 0.8f),
+                    Offset(c.x, c.y + r * 0.8f), 4.dp.toPx(), StrokeCap.Round)
+                drawLine(color.copy(alpha = a), Offset(c.x - r * 0.8f, c.y),
+                    Offset(c.x + r * 0.8f, c.y), 4.dp.toPx(), StrokeCap.Round)
+            }
+            ImpactStyle.WAVE -> drawArc(
+                color.copy(alpha = a), startAngle = 150f, sweepAngle = 240f * p,
+                useCenter = false, style = Stroke(5.dp.toPx(), cap = StrokeCap.Round)
+            )
+            ImpactStyle.BUFF -> {
+                drawCircle(color.copy(alpha = a * 0.8f), r * (0.3f + 0.7f * p), style = Stroke(3.5.dp.toPx()))
+                drawCircle(color.copy(alpha = a * 0.25f), r * p)
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UnitCard(
@@ -169,6 +356,7 @@ fun UnitCard(
     flash: UnitFlash? = null,    // latest hit/heal/shield reaction to play
     turnsLeft: Int = 0,          // heroes with turns left get an underline
     glowColor: Color? = null,    // halo behind the card while a drag hovers it
+    impact: ImpactFx? = null,    // the strike animation currently landing here
     floaties: List<Floaty>,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
@@ -265,6 +453,7 @@ fun UnitCard(
                         .background(glowColor.copy(alpha = 0.45f))
                 )
             }
+            StatusAura(unit)
             unit.charge?.let {
                 ChargeRing(
                     progress = it.progress,
@@ -325,6 +514,7 @@ fun UnitCard(
                     Text("T", color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
                 }
             }
+            ImpactOverlay(impact)
             // Numbers anchor at the bottom of the block, directly above the
             // health bar, so what you lost and what's left read together.
             Box(
