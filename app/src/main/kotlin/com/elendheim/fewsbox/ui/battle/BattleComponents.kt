@@ -475,20 +475,43 @@ fun UnitCard(
                     modifier = Modifier.size(64.dp)
                 )
             }
-            // A hero's weapon rides BEHIND the body: declared before the
-            // block so the block overlaps the grip and nothing floats.
+            // Carried gear rides BEHIND the body: declared before the block
+            // so it overlaps the grips and nothing floats in front. Heroes
+            // hold the weapon on their right and the offhand on their left;
+            // enemies mirror, weapon facing down at the player line.
+            val isHeroBlock = GameIcons.heroColor(unit.iconId) != null
             val weaponArt = GameArt[unit.abilities.getOrNull(0)?.iconId]
-            if (weaponArt != null && GameIcons.heroColor(unit.iconId) != null) {
+            if (weaponArt != null) {
                 Image(
                     painter = painterResource(weaponArt),
                     contentDescription = null,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(if (isHeroBlock) Alignment.TopEnd else Alignment.TopStart)
                         .requiredSize(38.dp)
                         .graphicsLayer {
-                            translationX = with(this) { 28.dp.toPx() }
+                            val out = with(this) { 28.dp.toPx() }
+                            translationX = if (isHeroBlock) out else -out
                             translationY = with(this) { 4.dp.toPx() }
-                            rotationZ = if (isActing) -14f else 0f
+                            if (!isHeroBlock) scaleX = -1f
+                            rotationZ = when {
+                                !isActing -> 0f
+                                isHeroBlock -> -14f
+                                else -> 14f
+                            }
+                        }
+                )
+            }
+            val offhandArt = GameArt[unit.abilities.getOrNull(1)?.iconId]
+            if (offhandArt != null && isHeroBlock) {
+                Image(
+                    painter = painterResource(offhandArt),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .requiredSize(30.dp)
+                        .graphicsLayer {
+                            translationX = with(this) { (-22).dp.toPx() }
+                            translationY = with(this) { 14.dp.toPx() }
                         }
                 )
             }
