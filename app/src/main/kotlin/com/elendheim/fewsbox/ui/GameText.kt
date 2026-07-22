@@ -29,7 +29,7 @@ object GameText {
         // RED
         "wpn_red_sword" to "Sword",
         "wpn_red_maul" to "Crimson Maul",
-        "wpn_red_cleaver" to "Cleaver",
+        "wpn_red_cleaver" to "Bent Blade",
         "wpn_red_axe" to "Axe",
         "wpn_red_pulse" to "The Pulse Cutter",
         "off_red_buckler" to "Jagged Buckler",
@@ -201,7 +201,7 @@ object GameText {
     private val weaponBlurbs = mapOf(
         "wpn_red_sword" to "The first blade. Clean in, ragged out.",
         "wpn_red_maul" to "One massive swing that rings skulls.",
-        "wpn_red_cleaver" to "Chop. Chop. Chop.",
+        "wpn_red_cleaver" to "It was straight once. It still cuts.",
         "wpn_red_axe" to "Heavy enough to take the fight out of anyone.",
         "wpn_red_pulse" to "A blade wired straight into the party's stored power.",
         "wpn_orange_ember" to "Where Orange goes, fire follows.",
