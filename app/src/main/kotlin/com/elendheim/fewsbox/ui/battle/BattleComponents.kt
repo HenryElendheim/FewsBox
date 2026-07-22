@@ -501,20 +501,6 @@ fun UnitCard(
                         }
                 )
             }
-            val offhandArt = GameArt[unit.abilities.getOrNull(1)?.iconId]
-            if (offhandArt != null && isHeroBlock) {
-                Image(
-                    painter = painterResource(offhandArt),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .requiredSize(30.dp)
-                        .graphicsLayer {
-                            translationX = with(this) { (-22).dp.toPx() }
-                            translationY = with(this) { 14.dp.toPx() }
-                        }
-                )
-            }
             val heroColor = GameIcons.heroColor(unit.iconId)
             Box(
                 modifier = Modifier
@@ -541,6 +527,22 @@ fun UnitCard(
                             .background(washColor.copy(alpha = washAlpha.value))
                     )
                 }
+            }
+            // The offhand sits IN FRONT of the hero on their left — a shield
+            // is held out, not hidden behind the back.
+            val offhandArt = GameArt[unit.abilities.getOrNull(1)?.iconId]
+            if (offhandArt != null && isHeroBlock) {
+                Image(
+                    painter = painterResource(offhandArt),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .requiredSize(30.dp)
+                        .graphicsLayer {
+                            translationX = with(this) { (-16).dp.toPx() }
+                            translationY = with(this) { 16.dp.toPx() }
+                        }
+                )
             }
             if (unit.shield > 0) {
                 Box(
