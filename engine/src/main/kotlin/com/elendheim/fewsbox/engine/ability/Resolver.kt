@@ -28,6 +28,7 @@ class Resolver(
         const val BURN_STATUS_ID = "burn"
         const val VULNERABLE_STATUS_ID = "vulnerable"
         const val DULL_STATUS_ID = "dull"
+        const val WIND_STATUS_ID = "wind"
         const val CRIT_CHANCE = 0.10f
         const val CRIT_MULTIPLIER = 1.5f
 
@@ -432,6 +433,13 @@ class Resolver(
         flatBonus: Int = 0,
         extraActionOnKill: Boolean = false
     ) {
+        // Wind in the attacker's eyes: the whole swing can miss outright.
+        val missChance = passiveMagnitude(actor, PassiveEffect.MISS_CHANCE)
+        if (missChance > 0 && rng.nextInt(100) < missChance) {
+            emit(CombatEvent.Dodged(target.id))
+            return
+        }
+
         var raw = actor.baseAttack * multiplier + flatBonus
 
         // The attacker's own ups and downs.
@@ -548,6 +556,12 @@ class Resolver(
             // Payback Charm: touching the marked one dulls your blade.
             if (hasPassive(target, PassiveEffect.PUNISH_WEAKEN) && actor.isAlive) {
                 addStatus(actor, DULL_STATUS_ID, stacks = 1, duration = 1)
+            }
+
+            // Windrunner's Boon: hit the sheltered and the wind takes your
+            // next swings — half of them just miss.
+            if (hasPassive(target, PassiveEffect.PUNISH_WIND) && actor.isAlive) {
+                addStatus(actor, WIND_STATUS_ID, stacks = 1, duration = 2)
             }
 
             // Scorching Skies: the marked one swings straight back, no turn spent.

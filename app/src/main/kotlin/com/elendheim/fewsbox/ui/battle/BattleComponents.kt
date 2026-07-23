@@ -162,6 +162,8 @@ private val auras: Map<String, Pair<Color, AuraStyle>> = mapOf(
     "ignite" to (OrangeC to AuraStyle.GLOW),
     "omen" to (VioletC to AuraStyle.GLOW),
     "dodge" to (Color(0xFF8B8797) to AuraStyle.HAZE),
+    "wind_shield" to (GreenC to AuraStyle.HAZE),
+    "wind" to (Color(0xFF8B8797) to AuraStyle.HAZE),
     "cloak" to (VioletC to AuraStyle.HAZE)
 )
 

@@ -65,11 +65,22 @@ fun InfoOverlay(content: InfoContent?, onDismiss: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             for (line in content.lines) {
                 val isHeader = line.isNotEmpty() && line == line.uppercase() && !line.startsWith(" ")
+                // Status applications read bold so what lands is unmissable.
+                val isApply = !isHeader && (line.trimStart().startsWith("Applies") ||
+                    line.contains("chance: applies"))
                 Text(
                     text = line.trim(),
-                    color = if (isHeader) TextBright else TextMuted,
+                    color = when {
+                        isHeader -> TextBright
+                        isApply -> TextBright
+                        else -> TextMuted
+                    },
                     fontSize = if (isHeader) 12.sp else 13.sp,
-                    fontWeight = if (isHeader) FontWeight.Black else FontWeight.Normal,
+                    fontWeight = when {
+                        isHeader -> FontWeight.Black
+                        isApply -> FontWeight.Bold
+                        else -> FontWeight.Normal
+                    },
                     lineHeight = 18.sp,
                     letterSpacing = if (isHeader) 1.sp else 0.sp,
                     modifier = Modifier.padding(

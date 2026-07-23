@@ -35,6 +35,8 @@ enum class PassiveEffect {
     ON_HIT_APPLY_BURN,    // owner's hits set targets on fire
     ON_HIT_APPLY_VULN,    // owner's hits leave targets vulnerable
     PUNISH_WEAKEN,        // attackers get weakened for daring
+    PUNISH_WIND,          // attackers catch the wind for daring
+    MISS_CHANCE,          // owner's attacks have magnitude% chance to whiff
     LURE,                 // owner is forced to attack the healthiest opposing unit
     UNTARGETABLE,         // enemies cannot pick the owner as a target
     DEBUFF_IMMUNE,        // new debuffs bounce off

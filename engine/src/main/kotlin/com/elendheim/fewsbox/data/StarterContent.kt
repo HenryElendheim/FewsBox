@@ -66,6 +66,8 @@ object Statuses {
     val SPITE = buff("spite", PassiveEffect.DAMAGE_DEALT_UP, 5)          // Last Laugh, healthy
     val KEEN = buff("keen", PassiveEffect.DAMAGE_DEALT_UP_FLAT, 5)       // Spilled's edge
     val DODGE = buff("dodge", PassiveEffect.DODGE, 35)                   // Smokescreen
+    val WIND_SHIELD = buff("wind_shield", PassiveEffect.PUNISH_WIND)     // Windrunner's Boon
+    val WIND = debuff("wind", PassiveEffect.MISS_CHANCE, 50)             // half the swings whiff
     val ANGER = buff("anger", PassiveEffect.ULT_TICK, 10)                // Anger Management
     val COUNTER = buff("counter", PassiveEffect.COUNTER)                 // Scorching Skies
     val IGNITE = buff("ignite", PassiveEffect.ON_HIT_APPLY_BURN)         // Ember Gain
@@ -91,7 +93,7 @@ object Statuses {
         BURN, POISON, SCORCH, BLEED, STUN, LURE,
         WEAKEN, SUNDER, DULL, SAP, VULNERABLE,
         TAUNT, THORNS, WAR_CRY, RALLY, GUARD, PEST_GUARD, SPITE, KEEN,
-        DODGE, ANGER, COUNTER, IGNITE, OMEN, FIRE_SHIELD, KISS, IMMUNITY,
+        DODGE, WIND_SHIELD, WIND, ANGER, COUNTER, IGNITE, OMEN, FIRE_SHIELD, KISS, IMMUNITY,
         REFLECT, ECHO, CLOAK, PAYBACK, WARD, BUBBLE, THIEF, REGEN
     )
     val REGISTRY: Map<String, StatusDef> = ALL.associateBy { it.id }
@@ -365,8 +367,7 @@ object Offhands {
     val GREEN_MIRROR = off("off_green_mirror", Targeting.SINGLE_ALLY,
         Effect.ApplyStatus(statusId = "echo", stacks = 1, duration = 3))
     val GREEN_BOON = off("off_green_boon", Targeting.SINGLE_ALLY,
-        Effect.ReduceCooldowns(amount = 1),
-        Effect.GainShield(amount = 4))
+        Effect.ApplyStatus(statusId = "wind_shield", stacks = 1, duration = 2))
     val GREEN_BARK = off("off_green_bark", Targeting.SINGLE_ALLY,
         Effect.Heal(amount = 2),
         Effect.HealAllAllies(amount = 6))

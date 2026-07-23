@@ -142,6 +142,8 @@ object GameIcons {
         "ic_status_spite" to IconSpec("SP", Violet),
         "ic_status_keen" to IconSpec("KN", ShieldBlue),
         "ic_status_dodge" to IconSpec("DG", TealDim),
+        "ic_status_wind_shield" to IconSpec("WS", HpGreen),
+        "ic_status_wind" to IconSpec("WI", TealDim),
         "ic_status_anger" to IconSpec("AN", OrangeHero),
         "ic_status_counter" to IconSpec("CO", OrangeHero),
         "ic_status_ignite" to IconSpec("IG", OrangeHero),

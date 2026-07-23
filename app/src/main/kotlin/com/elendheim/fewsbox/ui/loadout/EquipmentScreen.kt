@@ -181,8 +181,7 @@ private fun HeroLoadoutCard(
                         subtitle = if (unlocked) {
                             "Weapon" + if (weapon.attackBonus > 0) " · +${weapon.attackBonus} ATK" else ""
                         } else "Weapon · ${Shop.WEAPON_PRICE} fews in the shop",
-                        lines = listOf(GameText.weaponBlurb(id)) +
-                            GameText.describeAbility(
+                        lines = GameText.describeAbility(
                                 weapon.grantedAbility,
                                 member.hero.baseAttack + Progression.bonusAttack(level) + weapon.attackBonus
                             )
@@ -203,8 +202,7 @@ private fun HeroLoadoutCard(
                     InfoContent(
                         title = GameText.name(id),
                         subtitle = if (unlocked) "Offhand" else "Offhand · ${Shop.OFFHAND_PRICE} fews in the shop",
-                        lines = listOf(GameText.offhandBlurb(id)) +
-                            GameText.describeAbility(offhand.grantedAbility, attack)
+                        lines = GameText.describeAbility(offhand.grantedAbility, attack)
                     )
                 )
             }

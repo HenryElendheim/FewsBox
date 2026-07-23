@@ -205,9 +205,7 @@ private fun ArmoryTab(
                                                     owned -> "Owned"
                                                     else -> "$price fews"
                                                 },
-                                                lines = listOf(
-                                                    GameText.weaponBlurb(id).ifEmpty { GameText.offhandBlurb(id) }
-                                                ) + GameText.describeAbility(ability, hero.baseAttack)
+                                                lines = GameText.describeAbility(ability, hero.baseAttack)
                                             )
                                         )
                                     }
